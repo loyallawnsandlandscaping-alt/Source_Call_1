@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
-  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -17,11 +16,10 @@ import Icon from '../../components/Icon';
 import SimpleBottomSheet from '../../components/BottomSheet';
 
 export default function SettingsScreen() {
-  const { user, signOut, isSupabaseConfigured } = useAuth();
+  const { user, signOut, isSupabaseConfigured, analyticsManager, securityManager } = useAuth();
   const [showAbout, setShowAbout] = useState(false);
-  const [showSupabaseConfig, setShowSupabaseConfig] = useState(false);
-  const [supabaseUrl, setSupabaseUrl] = useState('');
-  const [supabaseKey, setSupabaseKey] = useState('');
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showSecurity, setShowSecurity] = useState(false);
   const [settings, setSettings] = useState({
     notifications: true,
     sound: true,
@@ -32,7 +30,17 @@ export default function SettingsScreen() {
     handDetection: true,
     gestureControl: true,
     autoAnnotation: false,
+    biometricAuth: true,
+    analyticsTracking: true,
+    locationTracking: false,
+    crashReporting: true,
+    performanceMonitoring: true,
   });
+
+  React.useEffect(() => {
+    // Track screen view
+    analyticsManager.trackScreenView('settings');
+  }, []);
 
   const handleSignOut = () => {
     Alert.alert(
@@ -44,6 +52,7 @@ export default function SettingsScreen() {
           text: 'Sign Out',
           style: 'destructive',
           onPress: async () => {
+            analyticsManager.trackUserAction('sign_out', 'settings_button');
             await signOut();
             router.replace('/auth/signin');
           },
@@ -52,26 +61,78 @@ export default function SettingsScreen() {
     );
   };
 
-  const handleSupabaseConfig = () => {
-    if (!supabaseUrl || !supabaseKey) {
-      Alert.alert('Error', 'Please enter both Supabase URL and API key');
-      return;
-    }
-
-    Alert.alert(
-      'Configure Supabase',
-      'To connect to Supabase, you need to set environment variables:\n\nEXPO_PUBLIC_SUPABASE_URL\nEXPO_PUBLIC_SUPABASE_ANON_KEY\n\nRestart the app after setting these variables.',
-      [{ text: 'OK' }]
-    );
-    
-    setShowSupabaseConfig(false);
-  };
-
   const toggleSetting = (key: string) => {
+    const newValue = !settings[key as keyof typeof settings];
+    
     setSettings(prev => ({
       ...prev,
-      [key]: !prev[key as keyof typeof prev],
+      [key]: newValue,
     }));
+
+    // Track setting changes
+    analyticsManager.trackUserAction('toggle_setting', key, {
+      newValue,
+      category: getSettingCategory(key),
+    });
+
+    // Update analytics configuration
+    if (key === 'analyticsTracking') {
+      analyticsManager.updateConfig({ enableTracking: newValue });
+    } else if (key === 'locationTracking') {
+      analyticsManager.updateConfig({ enableLocationTracking: newValue });
+    } else if (key === 'crashReporting') {
+      analyticsManager.updateConfig({ enableCrashReporting: newValue });
+    } else if (key === 'performanceMonitoring') {
+      analyticsManager.updateConfig({ enablePerformanceMonitoring: newValue });
+    }
+
+    // Update security configuration
+    if (key === 'biometricAuth') {
+      securityManager.updateConfig({ enableBiometrics: newValue });
+    }
+  };
+
+  const getSettingCategory = (key: string): string => {
+    if (['notifications', 'sound', 'vibration'].includes(key)) return 'notifications';
+    if (['readReceipts', 'lastSeen'].includes(key)) return 'privacy';
+    if (['faceDetection', 'handDetection', 'gestureControl', 'autoAnnotation'].includes(key)) return 'ai';
+    if (['biometricAuth'].includes(key)) return 'security';
+    if (['analyticsTracking', 'locationTracking', 'crashReporting', 'performanceMonitoring'].includes(key)) return 'analytics';
+    return 'general';
+  };
+
+  const handleClearAnalyticsData = () => {
+    Alert.alert(
+      'Clear Analytics Data',
+      'This will permanently delete all stored analytics data. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear Data',
+          style: 'destructive',
+          onPress: async () => {
+            await analyticsManager.clearAllData();
+            analyticsManager.trackEvent('analytics_data_cleared');
+            Alert.alert('Success', 'Analytics data has been cleared.');
+          },
+        },
+      ]
+    );
+  };
+
+  const handleExportData = async () => {
+    try {
+      const userData = await analyticsManager.exportUserData();
+      analyticsManager.trackUserAction('export_data', 'settings_button');
+      
+      Alert.alert(
+        'Data Export',
+        `Found ${userData.sessions.length} sessions and ${userData.events.length} events. In a production app, this data would be exported to a file.`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Failed to export data. Please try again.');
+    }
   };
 
   const SettingRow = ({
@@ -144,21 +205,18 @@ export default function SettingsScreen() {
                 {isSupabaseConfigured ? 'Connected to Supabase' : 'Using local storage'}
               </Text>
             </View>
-            {!isSupabaseConfigured && (
-              <TouchableOpacity
-                onPress={() => setShowSupabaseConfig(true)}
-                style={{
-                  backgroundColor: colors.primary,
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                  borderRadius: 6,
-                }}
-              >
-                <Text style={[commonStyles.text, { color: colors.background, fontSize: 12 }]}>
-                  Connect
-                </Text>
-              </TouchableOpacity>
-            )}
+            <View
+              style={{
+                backgroundColor: isSupabaseConfigured ? colors.success : colors.warning,
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                borderRadius: 4,
+              }}
+            >
+              <Text style={[commonStyles.text, { color: colors.background, fontSize: 10, fontWeight: '600' }]}>
+                {isSupabaseConfigured ? 'CONNECTED' : 'LOCAL'}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -243,6 +301,23 @@ export default function SettingsScreen() {
           />
         </View>
 
+        {/* Security */}
+        <View style={{ backgroundColor: colors.card, marginTop: 20 }}>
+          <View style={{ paddingHorizontal: 20, paddingVertical: 12 }}>
+            <Text style={[commonStyles.text, { fontWeight: '600' }]}>
+              Security
+            </Text>
+          </View>
+          
+          <SettingRow
+            title="Biometric Authentication"
+            subtitle="Use fingerprint or face ID to unlock the app"
+            value={settings.biometricAuth}
+            onToggle={() => toggleSetting('biometricAuth')}
+            icon="finger-print"
+          />
+        </View>
+
         {/* AI Features */}
         <View style={{ backgroundColor: colors.card, marginTop: 20 }}>
           <View style={{ paddingHorizontal: 20, paddingVertical: 12 }}>
@@ -284,6 +359,47 @@ export default function SettingsScreen() {
           />
         </View>
 
+        {/* Analytics & Tracking */}
+        <View style={{ backgroundColor: colors.card, marginTop: 20 }}>
+          <View style={{ paddingHorizontal: 20, paddingVertical: 12 }}>
+            <Text style={[commonStyles.text, { fontWeight: '600' }]}>
+              Analytics & Tracking
+            </Text>
+          </View>
+          
+          <SettingRow
+            title="Usage Analytics"
+            subtitle="Help improve the app by sharing usage data"
+            value={settings.analyticsTracking}
+            onToggle={() => toggleSetting('analyticsTracking')}
+            icon="analytics"
+          />
+          
+          <SettingRow
+            title="Location Tracking"
+            subtitle="Include location data in analytics (optional)"
+            value={settings.locationTracking}
+            onToggle={() => toggleSetting('locationTracking')}
+            icon="location"
+          />
+          
+          <SettingRow
+            title="Crash Reporting"
+            subtitle="Automatically report crashes to help fix bugs"
+            value={settings.crashReporting}
+            onToggle={() => toggleSetting('crashReporting')}
+            icon="bug"
+          />
+          
+          <SettingRow
+            title="Performance Monitoring"
+            subtitle="Monitor app performance to improve user experience"
+            value={settings.performanceMonitoring}
+            onToggle={() => toggleSetting('performanceMonitoring')}
+            icon="speedometer"
+          />
+        </View>
+
         {/* Other Options */}
         <View style={{ backgroundColor: colors.card, marginTop: 20 }}>
           <TouchableOpacity
@@ -295,7 +411,10 @@ export default function SettingsScreen() {
               borderBottomWidth: 1,
               borderBottomColor: colors.border,
             }}
-            onPress={() => setShowAbout(true)}
+            onPress={() => {
+              analyticsManager.trackUserAction('view_about', 'settings_button');
+              setShowAbout(true);
+            }}
           >
             <Icon name="information-circle" size={24} color={colors.primary} />
             <Text style={[commonStyles.text, { marginLeft: 16, fontWeight: '500' }]}>
@@ -313,11 +432,71 @@ export default function SettingsScreen() {
               borderBottomWidth: 1,
               borderBottomColor: colors.border,
             }}
-            onPress={() => Alert.alert('Help', 'Help documentation coming soon!')}
+            onPress={() => {
+              analyticsManager.trackUserAction('view_privacy', 'settings_button');
+              setShowPrivacy(true);
+            }}
           >
-            <Icon name="help-circle" size={24} color={colors.primary} />
+            <Icon name="shield-checkmark" size={24} color={colors.primary} />
             <Text style={[commonStyles.text, { marginLeft: 16, fontWeight: '500' }]}>
-              Help & Support
+              Privacy Policy
+            </Text>
+            <Icon name="chevron-forward" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingVertical: 16,
+              paddingHorizontal: 20,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.border,
+            }}
+            onPress={() => {
+              analyticsManager.trackUserAction('view_security', 'settings_button');
+              setShowSecurity(true);
+            }}
+          >
+            <Icon name="lock-closed" size={24} color={colors.primary} />
+            <Text style={[commonStyles.text, { marginLeft: 16, fontWeight: '500' }]}>
+              Security Info
+            </Text>
+            <Icon name="chevron-forward" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingVertical: 16,
+              paddingHorizontal: 20,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.border,
+            }}
+            onPress={handleExportData}
+          >
+            <Icon name="download" size={24} color={colors.primary} />
+            <Text style={[commonStyles.text, { marginLeft: 16, fontWeight: '500' }]}>
+              Export My Data
+            </Text>
+            <Icon name="chevron-forward" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingVertical: 16,
+              paddingHorizontal: 20,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.border,
+            }}
+            onPress={handleClearAnalyticsData}
+          >
+            <Icon name="trash" size={24} color={colors.warning} />
+            <Text style={[commonStyles.text, { marginLeft: 16, fontWeight: '500', color: colors.warning }]}>
+              Clear Analytics Data
             </Text>
             <Icon name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
@@ -340,73 +519,6 @@ export default function SettingsScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
-
-      {/* Supabase Configuration Bottom Sheet */}
-      <SimpleBottomSheet
-        isVisible={showSupabaseConfig}
-        onClose={() => setShowSupabaseConfig(false)}
-      >
-        <View style={{ padding: 20 }}>
-          <Text style={[commonStyles.subtitle, { marginBottom: 20 }]}>
-            Connect to Supabase
-          </Text>
-          
-          <Text style={[commonStyles.text, { marginBottom: 16 }]}>
-            To enable real-time messaging and cloud storage, connect your Supabase project.
-          </Text>
-
-          <View style={{ marginBottom: 16 }}>
-            <Text style={[commonStyles.text, { fontWeight: '600', marginBottom: 8 }]}>
-              Supabase URL
-            </Text>
-            <TextInput
-              style={[
-                commonStyles.input,
-                { backgroundColor: colors.inputBackground }
-              ]}
-              placeholder="https://your-project.supabase.co"
-              value={supabaseUrl}
-              onChangeText={setSupabaseUrl}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-
-          <View style={{ marginBottom: 20 }}>
-            <Text style={[commonStyles.text, { fontWeight: '600', marginBottom: 8 }]}>
-              Anonymous API Key
-            </Text>
-            <TextInput
-              style={[
-                commonStyles.input,
-                { backgroundColor: colors.inputBackground }
-              ]}
-              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-              value={supabaseKey}
-              onChangeText={setSupabaseKey}
-              autoCapitalize="none"
-              autoCorrect={false}
-              secureTextEntry
-            />
-          </View>
-
-          <TouchableOpacity
-            style={[
-              commonStyles.button,
-              { backgroundColor: colors.primary, marginBottom: 12 }
-            ]}
-            onPress={handleSupabaseConfig}
-          >
-            <Text style={[commonStyles.buttonText, { color: colors.background }]}>
-              Configure Supabase
-            </Text>
-          </TouchableOpacity>
-
-          <Text style={[commonStyles.textSecondary, { fontSize: 12, textAlign: 'center' }]}>
-            You can find these values in your Supabase project settings under API.
-          </Text>
-        </View>
-      </SimpleBottomSheet>
 
       {/* About Bottom Sheet */}
       <SimpleBottomSheet
@@ -433,13 +545,15 @@ export default function SettingsScreen() {
               • Advanced annotation system{'\n'}
               • Video calling capabilities{'\n'}
               • Secure end-to-end encryption{'\n'}
-              • Cloud sync with Supabase
+              • Cloud sync with Supabase{'\n'}
+              • Extensive user analytics{'\n'}
+              • Biometric authentication
             </Text>
           </View>
 
           <View style={{ marginBottom: 16 }}>
             <Text style={[commonStyles.text, { fontWeight: '600', marginBottom: 8 }]}>
-              AI Models:
+              AI Models (30+):
             </Text>
             <Text style={commonStyles.textSecondary}>
               • Face Detection & Emotion Analysis{'\n'}
@@ -447,13 +561,95 @@ export default function SettingsScreen() {
               • Gesture Recognition{'\n'}
               • Object Detection & Classification{'\n'}
               • Real-time Frame Analysis{'\n'}
-              • 30+ AI capabilities integrated
+              • Text Analysis & Translation{'\n'}
+              • Image & Video Processing{'\n'}
+              • Medical Imaging Analysis{'\n'}
+              • Financial Data Analysis
             </Text>
           </View>
 
           <Text style={[commonStyles.textSecondary, { fontSize: 12, textAlign: 'center' }]}>
-            Version 1.0.0 • Built with React Native & Expo
+            Version 1.0.0 • Built with React Native & Expo{'\n'}
+            Powered by Supabase & TensorFlow
           </Text>
+        </View>
+      </SimpleBottomSheet>
+
+      {/* Privacy Policy Bottom Sheet */}
+      <SimpleBottomSheet
+        isVisible={showPrivacy}
+        onClose={() => setShowPrivacy(false)}
+      >
+        <View style={{ padding: 20 }}>
+          <Text style={[commonStyles.subtitle, { marginBottom: 20 }]}>
+            Privacy Policy
+          </Text>
+          
+          <ScrollView style={{ maxHeight: 400 }}>
+            <Text style={[commonStyles.text, { marginBottom: 16 }]}>
+              <Text style={{ fontWeight: '600' }}>Data Collection:{'\n'}</Text>
+              We collect usage analytics, device information, and app interaction data to improve your experience. All data is encrypted and stored securely.
+            </Text>
+
+            <Text style={[commonStyles.text, { marginBottom: 16 }]}>
+              <Text style={{ fontWeight: '600' }}>AI Processing:{'\n'}</Text>
+              AI features process data locally on your device when possible. Some features may require cloud processing for optimal performance.
+            </Text>
+
+            <Text style={[commonStyles.text, { marginBottom: 16 }]}>
+              <Text style={{ fontWeight: '600' }}>Location Data:{'\n'}</Text>
+              Location tracking is optional and can be disabled in settings. When enabled, location data helps improve AI features and analytics.
+            </Text>
+
+            <Text style={[commonStyles.text, { marginBottom: 16 }]}>
+              <Text style={{ fontWeight: '600' }}>Data Sharing:{'\n'}</Text>
+              We do not sell or share your personal data with third parties. Analytics data is anonymized and used only for app improvement.
+            </Text>
+
+            <Text style={[commonStyles.text, { marginBottom: 16 }]}>
+              <Text style={{ fontWeight: '600' }}>Your Rights:{'\n'}</Text>
+              You can export, delete, or modify your data at any time through the app settings. Contact us for additional privacy requests.
+            </Text>
+          </ScrollView>
+        </View>
+      </SimpleBottomSheet>
+
+      {/* Security Info Bottom Sheet */}
+      <SimpleBottomSheet
+        isVisible={showSecurity}
+        onClose={() => setShowSecurity(false)}
+      >
+        <View style={{ padding: 20 }}>
+          <Text style={[commonStyles.subtitle, { marginBottom: 20 }]}>
+            Security Information
+          </Text>
+          
+          <ScrollView style={{ maxHeight: 400 }}>
+            <Text style={[commonStyles.text, { marginBottom: 16 }]}>
+              <Text style={{ fontWeight: '600' }}>Encryption:{'\n'}</Text>
+              All sensitive data is encrypted using industry-standard encryption algorithms. Messages and user data are protected both in transit and at rest.
+            </Text>
+
+            <Text style={[commonStyles.text, { marginBottom: 16 }]}>
+              <Text style={{ fontWeight: '600' }}>Authentication:{'\n'}</Text>
+              Multi-factor authentication including biometric options (fingerprint, face ID) provides secure access to your account.
+            </Text>
+
+            <Text style={[commonStyles.text, { marginBottom: 16 }]}>
+              <Text style={{ fontWeight: '600' }}>Session Management:{'\n'}</Text>
+              Sessions automatically expire after 30 minutes of inactivity. Failed login attempts are tracked and accounts are temporarily locked after 5 failed attempts.
+            </Text>
+
+            <Text style={[commonStyles.text, { marginBottom: 16 }]}>
+              <Text style={{ fontWeight: '600' }}>Input Validation:{'\n'}</Text>
+              All user inputs are validated and sanitized to prevent injection attacks and ensure data integrity.
+            </Text>
+
+            <Text style={[commonStyles.text, { marginBottom: 16 }]}>
+              <Text style={{ fontWeight: '600' }}>Secure Storage:{'\n'}</Text>
+              Sensitive information is stored using the device&apos;s secure storage mechanisms, protected by hardware-level security features.
+            </Text>
+          </ScrollView>
         </View>
       </SimpleBottomSheet>
     </SafeAreaView>
