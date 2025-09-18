@@ -1,26 +1,51 @@
+
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
 export const colors = {
-  primary: '#162456',    // Material Blue
-  secondary: '#193cb8',  // Darker Blue
-  accent: '#64B5F6',     // Light Blue
-  background: '#101824',  // Keeping dark background
-  backgroundAlt: '#162133',  // Keeping dark background
-  text: '#e3e3e3',       // Keeping light text
-  grey: '#90CAF9',       // Light Blue Grey
-  card: '#193cb8',       // Keeping dark card background
+  primary: '#007AFF',      // iOS Blue
+  secondary: '#5856D6',    // Purple
+  accent: '#34C759',       // Green
+  background: '#FFFFFF',   // White background for light theme
+  backgroundAlt: '#F2F2F7', // Light gray
+  text: '#000000',         // Black text
+  textSecondary: '#8E8E93', // Gray text
+  grey: '#C7C7CC',         // Light gray
+  card: '#FFFFFF',         // White cards
+  border: '#E5E5EA',       // Light border
+  success: '#34C759',      // Green
+  warning: '#FF9500',      // Orange
+  error: '#FF3B30',        // Red
+  shadow: 'rgba(0, 0, 0, 0.1)',
 };
 
 export const buttonStyles = StyleSheet.create({
-  instructionsButton: {
+  primary: {
     backgroundColor: colors.primary,
-    alignSelf: 'center',
-    width: '100%',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  backButton: {
+  secondary: {
     backgroundColor: colors.backgroundAlt,
-    alignSelf: 'center',
-    width: '100%',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  text: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.background,
+  },
+  textSecondary: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
   },
 });
 
@@ -35,8 +60,6 @@ export const commonStyles = StyleSheet.create({
     backgroundColor: colors.background,
     width: '100%',
     height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   content: {
     flex: 1,
@@ -44,46 +67,79 @@ export const commonStyles = StyleSheet.create({
     justifyContent: 'center',
     maxWidth: 800,
     width: '100%',
+    paddingHorizontal: 20,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: 28,
+    fontWeight: '700',
     textAlign: 'center',
     color: colors.text,
-    marginBottom: 10
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    textAlign: 'center',
+    color: colors.text,
+    marginBottom: 16,
   },
   text: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '400',
     color: colors.text,
-    marginBottom: 8,
     lineHeight: 24,
     textAlign: 'center',
+  },
+  textSecondary: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.textSecondary,
+    lineHeight: 20,
   },
   section: {
     width: '100%',
     alignItems: 'center',
     paddingHorizontal: 20,
-  },
-  buttonContainer: {
-    width: '100%',
-    alignItems: 'center',
-    paddingHorizontal: 20,
+    marginVertical: 16,
   },
   card: {
-    backgroundColor: colors.backgroundAlt,
-    borderColor: colors.grey,
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 10,
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 20,
     marginVertical: 8,
     width: '100%',
-    boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.1)',
-    elevation: 2,
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  icon: {
-    width: 60,
-    height: 60,
-    tintColor: "white",
+  input: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginVertical: 8,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  centerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  spaceBetween: {
+    justifyContent: 'space-between',
+  },
+  shadow: {
+    boxShadow: `0px 4px 12px ${colors.shadow}`,
+    elevation: 4,
   },
 });
