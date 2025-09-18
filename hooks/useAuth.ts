@@ -4,6 +4,7 @@ import { AuthState, User } from '../types';
 import { currentUser } from '../data/mockData';
 import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
+import { supabase, isSupabaseConfigured } from '../utils/supabase';
 
 export const useAuth = () => {
   const [authState, setAuthState] = useState<AuthState>({
@@ -15,29 +16,99 @@ export const useAuth = () => {
 
   useEffect(() => {
     checkAuthStatus();
+    
+    // Listen for auth changes if Supabase is configured
+    if (isSupabaseConfigured()) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          console.log('Supabase auth event:', event);
+          if (session?.user) {
+            const user: User = {
+              id: session.user.id,
+              email: session.user.email || '',
+              displayName: session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || '',
+              username: session.user.user_metadata?.username || session.user.email?.split('@')[0] || '',
+              avatar: session.user.user_metadata?.avatar_url || currentUser.avatar,
+              isOnline: true,
+              lastSeen: new Date(),
+              isVerified: session.user.email_confirmed_at !== null,
+            };
+            
+            setAuthState({
+              user,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+            });
+          } else {
+            setAuthState({
+              user: null,
+              isAuthenticated: false,
+              isLoading: false,
+              error: null,
+            });
+          }
+        }
+      );
+
+      return () => subscription.unsubscribe();
+    }
   }, []);
 
   const checkAuthStatus = async () => {
     try {
       console.log('Checking authentication status...');
-      const token = await SecureStore.getItemAsync('auth_token');
-      if (token) {
-        // Simulate API call to verify token
-        setTimeout(() => {
+      
+      if (isSupabaseConfigured()) {
+        // Use Supabase authentication
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const user: User = {
+            id: session.user.id,
+            email: session.user.email || '',
+            displayName: session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || '',
+            username: session.user.user_metadata?.username || session.user.email?.split('@')[0] || '',
+            avatar: session.user.user_metadata?.avatar_url || currentUser.avatar,
+            isOnline: true,
+            lastSeen: new Date(),
+            isVerified: session.user.email_confirmed_at !== null,
+          };
+          
           setAuthState({
-            user: currentUser,
+            user,
             isAuthenticated: true,
             isLoading: false,
             error: null,
           });
-        }, 1000);
+        } else {
+          setAuthState({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null,
+          });
+        }
       } else {
-        setAuthState({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-          error: null,
-        });
+        // Fallback to local authentication
+        const token = await SecureStore.getItemAsync('auth_token');
+        if (token) {
+          // Simulate API call to verify token
+          setTimeout(() => {
+            setAuthState({
+              user: currentUser,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+            });
+          }, 1000);
+        } else {
+          setAuthState({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null,
+          });
+        }
       }
     } catch (error) {
       console.log('Auth check error:', error);
@@ -55,21 +126,39 @@ export const useAuth = () => {
       console.log('Signing in user:', email);
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Mock successful login
-      const token = 'mock_jwt_token_' + Date.now();
-      await SecureStore.setItemAsync('auth_token', token);
-      
-      setAuthState({
-        user: currentUser,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-      });
-      
-      return { success: true };
+      if (isSupabaseConfigured()) {
+        // Use Supabase authentication
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        
+        if (error) {
+          setAuthState(prev => ({
+            ...prev,
+            isLoading: false,
+            error: error.message,
+          }));
+          return { success: false, error: error.message };
+        }
+        
+        return { success: true };
+      } else {
+        // Fallback to mock authentication
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        const token = 'mock_jwt_token_' + Date.now();
+        await SecureStore.setItemAsync('auth_token', token);
+        
+        setAuthState({
+          user: currentUser,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+        
+        return { success: true };
+      }
     } catch (error) {
       console.log('Sign in error:', error);
       setAuthState(prev => ({
@@ -86,29 +175,55 @@ export const useAuth = () => {
       console.log('Signing up user:', email);
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock successful registration
-      const token = 'mock_jwt_token_' + Date.now();
-      await SecureStore.setItemAsync('auth_token', token);
-      
-      const newUser: User = {
-        ...currentUser,
-        email,
-        displayName,
-        username: email.split('@')[0],
-        isVerified: false,
-      };
-      
-      setAuthState({
-        user: newUser,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-      });
-      
-      return { success: true };
+      if (isSupabaseConfigured()) {
+        // Use Supabase authentication
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              display_name: displayName,
+              username: email.split('@')[0],
+            }
+          }
+        });
+        
+        if (error) {
+          setAuthState(prev => ({
+            ...prev,
+            isLoading: false,
+            error: error.message,
+          }));
+          return { success: false, error: error.message };
+        }
+        
+        // User will be automatically signed in if email confirmation is disabled
+        // Otherwise, they need to confirm their email first
+        return { success: true };
+      } else {
+        // Fallback to mock authentication
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const token = 'mock_jwt_token_' + Date.now();
+        await SecureStore.setItemAsync('auth_token', token);
+        
+        const newUser: User = {
+          ...currentUser,
+          email,
+          displayName,
+          username: email.split('@')[0],
+          isVerified: false,
+        };
+        
+        setAuthState({
+          user: newUser,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+        
+        return { success: true };
+      }
     } catch (error) {
       console.log('Sign up error:', error);
       setAuthState(prev => ({
@@ -123,7 +238,13 @@ export const useAuth = () => {
   const signOut = async () => {
     try {
       console.log('Signing out user...');
-      await SecureStore.deleteItemAsync('auth_token');
+      
+      if (isSupabaseConfigured()) {
+        await supabase.auth.signOut();
+      } else {
+        await SecureStore.deleteItemAsync('auth_token');
+      }
+      
       setAuthState({
         user: null,
         isAuthenticated: false,
@@ -145,7 +266,7 @@ export const useAuth = () => {
       }
       
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Authenticate to access your messages',
+        promptMessage: 'Authenticate to access Source Call',
         fallbackLabel: 'Use passcode',
       });
       
@@ -168,5 +289,6 @@ export const useAuth = () => {
     signOut,
     authenticateWithBiometrics,
     checkAuthStatus,
+    isSupabaseConfigured: isSupabaseConfigured(),
   };
 };

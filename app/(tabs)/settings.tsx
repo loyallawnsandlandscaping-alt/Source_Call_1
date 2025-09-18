@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -16,8 +17,11 @@ import Icon from '../../components/Icon';
 import SimpleBottomSheet from '../../components/BottomSheet';
 
 export default function SettingsScreen() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isSupabaseConfigured } = useAuth();
   const [showAbout, setShowAbout] = useState(false);
+  const [showSupabaseConfig, setShowSupabaseConfig] = useState(false);
+  const [supabaseUrl, setSupabaseUrl] = useState('');
+  const [supabaseKey, setSupabaseKey] = useState('');
   const [settings, setSettings] = useState({
     notifications: true,
     sound: true,
@@ -46,6 +50,21 @@ export default function SettingsScreen() {
         },
       ]
     );
+  };
+
+  const handleSupabaseConfig = () => {
+    if (!supabaseUrl || !supabaseKey) {
+      Alert.alert('Error', 'Please enter both Supabase URL and API key');
+      return;
+    }
+
+    Alert.alert(
+      'Configure Supabase',
+      'To connect to Supabase, you need to set environment variables:\n\nEXPO_PUBLIC_SUPABASE_URL\nEXPO_PUBLIC_SUPABASE_ANON_KEY\n\nRestart the app after setting these variables.',
+      [{ text: 'OK' }]
+    );
+    
+    setShowSupabaseConfig(false);
   };
 
   const toggleSetting = (key: string) => {
@@ -105,8 +124,42 @@ export default function SettingsScreen() {
         <View style={{ paddingHorizontal: 20, paddingVertical: 16 }}>
           <Text style={commonStyles.title}>Settings</Text>
           <Text style={commonStyles.textSecondary}>
-            Customize your messaging experience
+            Customize your Source Call experience
           </Text>
+        </View>
+
+        {/* Backend Status */}
+        <View style={[commonStyles.card, { margin: 20 }]}>
+          <View style={[commonStyles.row, { marginBottom: 12 }]}>
+            <Icon 
+              name={isSupabaseConfigured ? "cloud-done" : "cloud-offline"} 
+              size={24} 
+              color={isSupabaseConfigured ? colors.success : colors.warning} 
+            />
+            <View style={{ marginLeft: 16, flex: 1 }}>
+              <Text style={[commonStyles.text, { fontWeight: '600' }]}>
+                Backend Status
+              </Text>
+              <Text style={commonStyles.textSecondary}>
+                {isSupabaseConfigured ? 'Connected to Supabase' : 'Using local storage'}
+              </Text>
+            </View>
+            {!isSupabaseConfigured && (
+              <TouchableOpacity
+                onPress={() => setShowSupabaseConfig(true)}
+                style={{
+                  backgroundColor: colors.primary,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 6,
+                }}
+              >
+                <Text style={[commonStyles.text, { color: colors.background, fontSize: 12 }]}>
+                  Connect
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* Profile Section */}
@@ -288,6 +341,73 @@ export default function SettingsScreen() {
         <View style={{ height: 40 }} />
       </ScrollView>
 
+      {/* Supabase Configuration Bottom Sheet */}
+      <SimpleBottomSheet
+        isVisible={showSupabaseConfig}
+        onClose={() => setShowSupabaseConfig(false)}
+      >
+        <View style={{ padding: 20 }}>
+          <Text style={[commonStyles.subtitle, { marginBottom: 20 }]}>
+            Connect to Supabase
+          </Text>
+          
+          <Text style={[commonStyles.text, { marginBottom: 16 }]}>
+            To enable real-time messaging and cloud storage, connect your Supabase project.
+          </Text>
+
+          <View style={{ marginBottom: 16 }}>
+            <Text style={[commonStyles.text, { fontWeight: '600', marginBottom: 8 }]}>
+              Supabase URL
+            </Text>
+            <TextInput
+              style={[
+                commonStyles.input,
+                { backgroundColor: colors.inputBackground }
+              ]}
+              placeholder="https://your-project.supabase.co"
+              value={supabaseUrl}
+              onChangeText={setSupabaseUrl}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+
+          <View style={{ marginBottom: 20 }}>
+            <Text style={[commonStyles.text, { fontWeight: '600', marginBottom: 8 }]}>
+              Anonymous API Key
+            </Text>
+            <TextInput
+              style={[
+                commonStyles.input,
+                { backgroundColor: colors.inputBackground }
+              ]}
+              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              value={supabaseKey}
+              onChangeText={setSupabaseKey}
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry
+            />
+          </View>
+
+          <TouchableOpacity
+            style={[
+              commonStyles.button,
+              { backgroundColor: colors.primary, marginBottom: 12 }
+            ]}
+            onPress={handleSupabaseConfig}
+          >
+            <Text style={[commonStyles.buttonText, { color: colors.background }]}>
+              Configure Supabase
+            </Text>
+          </TouchableOpacity>
+
+          <Text style={[commonStyles.textSecondary, { fontSize: 12, textAlign: 'center' }]}>
+            You can find these values in your Supabase project settings under API.
+          </Text>
+        </View>
+      </SimpleBottomSheet>
+
       {/* About Bottom Sheet */}
       <SimpleBottomSheet
         isVisible={showAbout}
@@ -295,11 +415,11 @@ export default function SettingsScreen() {
       >
         <View style={{ padding: 20 }}>
           <Text style={[commonStyles.subtitle, { marginBottom: 20 }]}>
-            About This App
+            About Source Call
           </Text>
           
           <Text style={[commonStyles.text, { marginBottom: 16 }]}>
-            A secure, real-time messaging app with advanced AI-powered annotation capabilities.
+            A secure, real-time messaging app with advanced AI-powered annotation capabilities and video calling features.
           </Text>
 
           <View style={{ marginBottom: 16 }}>
@@ -312,7 +432,8 @@ export default function SettingsScreen() {
               • Touchless gesture control{'\n'}
               • Advanced annotation system{'\n'}
               • Video calling capabilities{'\n'}
-              • Secure end-to-end encryption
+              • Secure end-to-end encryption{'\n'}
+              • Cloud sync with Supabase
             </Text>
           </View>
 
@@ -325,7 +446,8 @@ export default function SettingsScreen() {
               • Hand Landmark Detection{'\n'}
               • Gesture Recognition{'\n'}
               • Object Detection & Classification{'\n'}
-              • Real-time Frame Analysis
+              • Real-time Frame Analysis{'\n'}
+              • 30+ AI capabilities integrated
             </Text>
           </View>
 
