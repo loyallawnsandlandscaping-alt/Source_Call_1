@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,32 +7,94 @@ import {
   TouchableOpacity,
   Alert,
   Image,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { commonStyles, colors, buttonStyles } from '../../styles/commonStyles';
-import { useAI } from '../../hooks/useAI';
-import Icon from '../../components/Icon';
 import SimpleBottomSheet from '../../components/BottomSheet';
+import AIModelCard from '../../components/AIModelCard';
+import Icon from '../../components/Icon';
+import { useAI } from '../../hooks/useAI';
+import { useAIOrchestration } from '../../hooks/useAIOrchestration';
 
-export default function AIScreen() {
+const AIScreen = () => {
   const {
     isInitialized,
-    isLoading,
-    error,
+    isLoading: aiLoading,
+    error: aiError,
     detections,
     analyzeFrame,
     detectFaces,
     detectHands,
-    detectGestures,
-    clearDetections,
+    detectPose,
+    detectObjects,
+    analyzeText,
+    translateText,
+    analyzeAudio,
+    detectProducts,
+    analyzeMedicalImage,
+    analyzeFinancialData,
+    detectAnomalies,
+    generateRecommendations,
+    createDataVisualization,
+    getModelInfo,
+    benchmarkModels,
+    clearDetections
   } = useAI();
+
+  const {
+    availableModels,
+    activeModels,
+    orchestrationConfig,
+    benchmarks,
+    updateInfo,
+    isLoading: orchestrationLoading,
+    error: orchestrationError,
+    routeRequest,
+    benchmarkModel,
+    updateModel,
+    getModelPerformance,
+    optimizeOrchestration,
+    getSystemStats
+  } = useAIOrchestration();
+
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [showResults, setShowResults] = useState(false);
+  const [analysisResults, setAnalysisResults] = useState<any>(null);
+  const [showModelManager, setShowModelManager] = useState(false);
+  const [showBenchmarks, setShowBenchmarks] = useState(false);
+  const [showSystemStats, setShowSystemStats] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'analysis' | 'models' | 'benchmarks' | 'stats'>('analysis');
+
+  useEffect(() => {
+    if (!isInitialized && !aiLoading) {
+      console.log('AI system not initialized, attempting to initialize...');
+    }
+  }, [isInitialized, aiLoading]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await optimizeOrchestration();
+      clearDetections();
+      setAnalysisResults(null);
+    } catch (err) {
+      console.log('Error refreshing:', err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const pickImage = async () => {
     try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant camera roll permissions to use this feature.');
+        return;
+      }
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -40,354 +102,609 @@ export default function AIScreen() {
         quality: 1,
       });
 
-      if (!result.canceled) {
+      if (!result.canceled && result.assets[0]) {
         setSelectedImage(result.assets[0].uri);
-        console.log('Image selected:', result.assets[0].uri);
+        setAnalysisResults(null);
       }
-    } catch (error) {
-      console.log('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image');
+    } catch (err: any) {
+      console.log('Error picking image:', err);
+      Alert.alert('Error', `Failed to pick image: ${err.message}`);
     }
   };
 
   const analyzeImage = async () => {
     if (!selectedImage) {
-      Alert.alert('Error', 'Please select an image first');
+      Alert.alert('No Image', 'Please select an image first.');
       return;
     }
 
     if (!isInitialized) {
-      Alert.alert('Error', 'AI models are not ready yet');
+      Alert.alert('AI Not Ready', 'AI models are still loading. Please wait.');
       return;
     }
 
     try {
-      setAnalyzing(true);
-      console.log('Analyzing image with AI...');
+      console.log('Starting comprehensive image analysis...');
       
-      const result = await analyzeFrame(selectedImage);
-      console.log('Analysis complete:', result);
+      // Use AI orchestration to route requests to best models
+      const visionModel = routeRequest('image_analysis', { category: 'vision', accuracy: 0.8 });
+      console.log('Selected vision model:', visionModel?.name);
+
+      const results = await analyzeFrame(selectedImage);
       
-      setShowResults(true);
-      Alert.alert(
-        'Analysis Complete!',
-        `Found ${result.detectedObjects.length} objects with ${Math.round(result.confidence * 100)}% confidence`
-      );
-    } catch (err) {
+      // Additional specialized analyses
+      const [products, textAnalysis] = await Promise.all([
+        detectProducts(selectedImage).catch(() => []),
+        analyzeText('Sample text for analysis').catch(() => null)
+      ]);
+
+      setAnalysisResults({
+        ...results,
+        products,
+        textAnalysis,
+        timestamp: new Date(),
+        modelUsed: visionModel?.name || 'Multi-model ensemble'
+      });
+
+      Alert.alert('Analysis Complete', 'Image analysis completed successfully!');
+    } catch (err: any) {
       console.log('Error analyzing image:', err);
-      Alert.alert('Error', 'Failed to analyze image');
-    } finally {
-      setAnalyzing(false);
+      Alert.alert('Analysis Failed', err.message);
     }
   };
 
   const runFaceDetection = async () => {
-    if (!selectedImage) {
-      Alert.alert('Error', 'Please select an image first');
-      return;
-    }
-
+    if (!selectedImage) return;
+    
     try {
-      setAnalyzing(true);
       const faces = await detectFaces(selectedImage);
-      Alert.alert(
-        'Face Detection',
-        `Detected ${faces.length} face(s). ${faces[0]?.emotions.map(e => `${e.emotion}: ${Math.round(e.confidence * 100)}%`).join(', ')}`
-      );
-    } catch (err) {
-      Alert.alert('Error', 'Face detection failed');
-    } finally {
-      setAnalyzing(false);
+      Alert.alert('Face Detection', `Detected ${faces.length} face(s)`);
+    } catch (err: any) {
+      Alert.alert('Error', err.message);
     }
   };
 
   const runHandDetection = async () => {
-    if (!selectedImage) {
-      Alert.alert('Error', 'Please select an image first');
-      return;
-    }
-
+    if (!selectedImage) return;
+    
     try {
-      setAnalyzing(true);
       const hands = await detectHands(selectedImage);
-      Alert.alert(
-        'Hand Detection',
-        `Detected ${hands.length} hand(s). Gestures: ${hands[0]?.gestures.map(g => g.type).join(', ')}`
-      );
-    } catch (err) {
-      Alert.alert('Error', 'Hand detection failed');
-    } finally {
-      setAnalyzing(false);
+      Alert.alert('Hand Detection', `Detected ${hands.length} hand(s)`);
+    } catch (err: any) {
+      Alert.alert('Error', err.message);
     }
   };
 
-  const runGestureDetection = async () => {
-    if (!selectedImage) {
-      Alert.alert('Error', 'Please select an image first');
-      return;
-    }
-
+  const runPoseDetection = async () => {
+    if (!selectedImage) return;
+    
     try {
-      setAnalyzing(true);
-      const gestures = await detectGestures(selectedImage);
-      Alert.alert(
-        'Gesture Detection',
-        `Detected gestures: ${gestures.map(g => `${g.type} (${Math.round(g.confidence * 100)}%)`).join(', ')}`
-      );
-    } catch (err) {
-      Alert.alert('Error', 'Gesture detection failed');
-    } finally {
-      setAnalyzing(false);
+      const pose = await detectPose(selectedImage);
+      Alert.alert('Pose Detection', `Detected pose with ${pose.keypoints.length} keypoints`);
+    } catch (err: any) {
+      Alert.alert('Error', err.message);
     }
   };
 
-  return (
-    <SafeAreaView style={commonStyles.container}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }}>
-        <Text style={commonStyles.title}>AI Detection Tools</Text>
-        <Text style={commonStyles.textSecondary}>
-          Advanced computer vision and machine learning capabilities
-        </Text>
+  const runObjectDetection = async () => {
+    if (!selectedImage) return;
+    
+    try {
+      const objects = await detectObjects(selectedImage);
+      Alert.alert('Object Detection', `Detected ${objects.length} object(s)`);
+    } catch (err: any) {
+      Alert.alert('Error', err.message);
+    }
+  };
 
-        {/* AI Status */}
-        <View style={[commonStyles.card, { marginTop: 20 }]}>
-          <View style={[commonStyles.row, { marginBottom: 12 }]}>
-            <Icon
-              name={isInitialized ? 'checkmark-circle' : 'time'}
-              size={24}
-              color={isInitialized ? colors.success : colors.warning}
+  const handleModelToggle = (modelId: string) => {
+    console.log(`Toggling model: ${modelId}`);
+    // In a real implementation, this would activate/deactivate the model
+    Alert.alert('Model Toggle', `Model ${modelId} toggled`);
+  };
+
+  const handleModelBenchmark = async (modelId: string) => {
+    try {
+      await benchmarkModel(modelId);
+      Alert.alert('Benchmark Complete', `Model ${modelId} benchmarked successfully`);
+    } catch (err: any) {
+      Alert.alert('Benchmark Failed', err.message);
+    }
+  };
+
+  const handleModelUpdate = async (modelId: string) => {
+    try {
+      const success = await updateModel(modelId);
+      if (success) {
+        Alert.alert('Update Complete', `Model ${modelId} updated successfully`);
+      } else {
+        Alert.alert('Update Failed', `Failed to update model ${modelId}`);
+      }
+    } catch (err: any) {
+      Alert.alert('Update Error', err.message);
+    }
+  };
+
+  const renderAnalysisTab = () => (
+    <ScrollView 
+      style={commonStyles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
+      {/* AI System Status */}
+      <View style={commonStyles.section}>
+        <Text style={commonStyles.sectionTitle}>AI System Status</Text>
+        <View style={commonStyles.card}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+            <Icon 
+              name={isInitialized ? 'check-circle' : 'clock'} 
+              size={20} 
+              color={isInitialized ? colors.success : colors.warning} 
             />
-            <Text style={[commonStyles.text, { marginLeft: 12 }]}>
-              AI Models Status
+            <Text style={[commonStyles.text, { marginLeft: 8 }]}>
+              {isInitialized ? 'AI System Ready' : 'Initializing AI Models...'}
             </Text>
           </View>
-          <Text style={commonStyles.textSecondary}>
-            {isLoading
-              ? 'Loading AI models...'
-              : isInitialized
-              ? 'All models ready for inference'
-              : error || 'Models not initialized'}
-          </Text>
-        </View>
-
-        {/* Image Selection */}
-        <View style={[commonStyles.card, { marginTop: 16 }]}>
-          <Text style={[commonStyles.text, { marginBottom: 16, fontWeight: '600' }]}>
-            Select Image for Analysis
-          </Text>
           
-          {selectedImage ? (
-            <View style={{ alignItems: 'center', marginBottom: 16 }}>
-              <Image
-                source={{ uri: selectedImage }}
-                style={{
-                  width: 200,
-                  height: 150,
-                  borderRadius: 12,
-                  backgroundColor: colors.backgroundAlt,
-                }}
-                resizeMode="cover"
-              />
-            </View>
-          ) : (
-            <View
-              style={{
-                height: 150,
-                backgroundColor: colors.backgroundAlt,
-                borderRadius: 12,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: 16,
-                borderWidth: 2,
-                borderColor: colors.border,
-                borderStyle: 'dashed',
-              }}
-            >
-              <Icon name="image" size={40} color={colors.textSecondary} />
-              <Text style={[commonStyles.textSecondary, { marginTop: 8 }]}>
-                No image selected
-              </Text>
-            </View>
+          {orchestrationConfig && (
+            <Text style={commonStyles.textSecondary}>
+              Primary Model: {availableModels.find(m => m.id === orchestrationConfig.primaryModel)?.name || 'Unknown'}
+            </Text>
           )}
-
-          <TouchableOpacity style={buttonStyles.secondary} onPress={pickImage}>
-            <Text style={buttonStyles.textSecondary}>
-              {selectedImage ? 'Change Image' : 'Select Image'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* AI Tools */}
-        <View style={[commonStyles.card, { marginTop: 16 }]}>
-          <Text style={[commonStyles.text, { marginBottom: 16, fontWeight: '600' }]}>
-            AI Detection Tools
+          
+          <Text style={commonStyles.textSecondary}>
+            Active Models: {Object.keys(activeModels).length} / {availableModels.length}
           </Text>
-
-          <TouchableOpacity
-            style={[buttonStyles.primary, { marginBottom: 12 }]}
-            onPress={analyzeImage}
-            disabled={!selectedImage || !isInitialized || analyzing}
-          >
-            <Text style={buttonStyles.text}>
-              {analyzing ? 'Analyzing...' : '🧠 Full AI Analysis'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[buttonStyles.secondary, { marginBottom: 12 }]}
-            onPress={runFaceDetection}
-            disabled={!selectedImage || !isInitialized || analyzing}
-          >
-            <Text style={buttonStyles.textSecondary}>
-              😊 Face Detection
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[buttonStyles.secondary, { marginBottom: 12 }]}
-            onPress={runHandDetection}
-            disabled={!selectedImage || !isInitialized || analyzing}
-          >
-            <Text style={buttonStyles.textSecondary}>
-              ✋ Hand Detection
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[buttonStyles.secondary, { marginBottom: 12 }]}
-            onPress={runGestureDetection}
-            disabled={!selectedImage || !isInitialized || analyzing}
-          >
-            <Text style={buttonStyles.textSecondary}>
-              👆 Gesture Recognition
-            </Text>
-          </TouchableOpacity>
         </View>
+      </View>
 
-        {/* Detection History */}
-        {detections.length > 0 && (
-          <View style={[commonStyles.card, { marginTop: 16 }]}>
-            <View style={[commonStyles.row, { marginBottom: 16 }]}>
-              <Text style={[commonStyles.text, { fontWeight: '600' }]}>
-                Detection History ({detections.length})
-              </Text>
-              <TouchableOpacity onPress={() => setShowResults(true)}>
-                <Text style={[commonStyles.text, { color: colors.primary }]}>
-                  View All
-                </Text>
+      {/* Image Analysis */}
+      <View style={commonStyles.section}>
+        <Text style={commonStyles.sectionTitle}>Image Analysis</Text>
+        
+        <TouchableOpacity style={buttonStyles.primary} onPress={pickImage}>
+          <Icon name="image" size={20} color="white" />
+          <Text style={buttonStyles.primaryText}>Select Image</Text>
+        </TouchableOpacity>
+
+        {selectedImage && (
+          <View style={commonStyles.card}>
+            <Image source={{ uri: selectedImage }} style={{ width: '100%', height: 200, borderRadius: 8 }} />
+            
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+              <TouchableOpacity 
+                style={[buttonStyles.secondary, { flex: 1, minWidth: '45%' }]} 
+                onPress={analyzeImage}
+                disabled={aiLoading}
+              >
+                {aiLoading ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <>
+                    <Icon name="zap" size={16} color={colors.primary} />
+                    <Text style={buttonStyles.secondaryText}>Full Analysis</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[buttonStyles.secondary, { flex: 1, minWidth: '45%' }]} 
+                onPress={runFaceDetection}
+              >
+                <Icon name="user" size={16} color={colors.primary} />
+                <Text style={buttonStyles.secondaryText}>Faces</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[buttonStyles.secondary, { flex: 1, minWidth: '45%' }]} 
+                onPress={runHandDetection}
+              >
+                <Icon name="hand" size={16} color={colors.primary} />
+                <Text style={buttonStyles.secondaryText}>Hands</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[buttonStyles.secondary, { flex: 1, minWidth: '45%' }]} 
+                onPress={runPoseDetection}
+              >
+                <Icon name="activity" size={16} color={colors.primary} />
+                <Text style={buttonStyles.secondaryText}>Pose</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[buttonStyles.secondary, { flex: 1, minWidth: '45%' }]} 
+                onPress={runObjectDetection}
+              >
+                <Icon name="eye" size={16} color={colors.primary} />
+                <Text style={buttonStyles.secondaryText}>Objects</Text>
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity
-              style={buttonStyles.secondary}
-              onPress={clearDetections}
-            >
-              <Text style={buttonStyles.textSecondary}>Clear History</Text>
-            </TouchableOpacity>
           </View>
         )}
 
-        {/* AI Capabilities Info */}
-        <View style={[commonStyles.card, { marginTop: 16 }]}>
-          <Text style={[commonStyles.text, { marginBottom: 16, fontWeight: '600' }]}>
-            AI Capabilities
-          </Text>
+        {/* Analysis Results */}
+        {analysisResults && (
+          <View style={commonStyles.card}>
+            <Text style={commonStyles.cardTitle}>Analysis Results</Text>
+            
+            <View style={{ marginBottom: 12 }}>
+              <Text style={commonStyles.textSecondary}>
+                Model: {analysisResults.modelUsed}
+              </Text>
+              <Text style={commonStyles.textSecondary}>
+                Processing Time: {analysisResults.processingTime}ms
+              </Text>
+              <Text style={commonStyles.textSecondary}>
+                Confidence: {(analysisResults.confidence * 100).toFixed(1)}%
+              </Text>
+            </View>
+
+            {analysisResults.detectedObjects && analysisResults.detectedObjects.length > 0 && (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={commonStyles.text}>Objects Detected:</Text>
+                {analysisResults.detectedObjects.map((obj: any, index: number) => (
+                  <Text key={index} style={commonStyles.textSecondary}>
+                    • {obj.label} ({(obj.confidence * 100).toFixed(1)}%)
+                  </Text>
+                ))}
+              </View>
+            )}
+
+            {analysisResults.faceData && (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={commonStyles.text}>Face Analysis:</Text>
+                <Text style={commonStyles.textSecondary}>
+                  Landmarks: {analysisResults.faceData.landmarks?.length || 0}
+                </Text>
+                {analysisResults.faceData.emotions && (
+                  <Text style={commonStyles.textSecondary}>
+                    Primary Emotion: {analysisResults.faceData.emotions[0]?.emotion} 
+                    ({(analysisResults.faceData.emotions[0]?.confidence * 100).toFixed(1)}%)
+                  </Text>
+                )}
+              </View>
+            )}
+
+            {analysisResults.handData && (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={commonStyles.text}>Hand Analysis:</Text>
+                <Text style={commonStyles.textSecondary}>
+                  Handedness: {analysisResults.handData.handedness}
+                </Text>
+                <Text style={commonStyles.textSecondary}>
+                  Landmarks: {analysisResults.handData.landmarks?.length || 0}
+                </Text>
+                {analysisResults.handData.gestures && analysisResults.handData.gestures.length > 0 && (
+                  <Text style={commonStyles.textSecondary}>
+                    Gesture: {analysisResults.handData.gestures[0].type} 
+                    ({(analysisResults.handData.gestures[0].confidence * 100).toFixed(1)}%)
+                  </Text>
+                )}
+              </View>
+            )}
+
+            {analysisResults.products && analysisResults.products.length > 0 && (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={commonStyles.text}>Products Detected:</Text>
+                {analysisResults.products.map((product: any, index: number) => (
+                  <View key={index} style={{ marginLeft: 12, marginBottom: 4 }}>
+                    <Text style={commonStyles.textSecondary}>• {product.name}</Text>
+                    {product.price && (
+                      <Text style={commonStyles.textSecondary}>  Price: ${product.price}</Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+      </View>
+
+      {/* Recent Detections */}
+      {detections.length > 0 && (
+        <View style={commonStyles.section}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={commonStyles.sectionTitle}>Recent Detections</Text>
+            <TouchableOpacity onPress={clearDetections}>
+              <Text style={[commonStyles.textSecondary, { fontSize: 14 }]}>Clear</Text>
+            </TouchableOpacity>
+          </View>
           
-          <View style={{ marginBottom: 12 }}>
-            <Text style={[commonStyles.text, { fontSize: 14, fontWeight: '500' }]}>
-              • Face Detection & Emotion Analysis
-            </Text>
-            <Text style={commonStyles.textSecondary}>
-              Detect faces and analyze emotions in real-time
-            </Text>
-          </View>
+          {detections.slice(-3).map((detection, index) => (
+            <View key={index} style={commonStyles.card}>
+              <Text style={commonStyles.text}>Model: {detection.modelUsed}</Text>
+              <Text style={commonStyles.textSecondary}>
+                Confidence: {(detection.confidence * 100).toFixed(1)}%
+              </Text>
+              <Text style={commonStyles.textSecondary}>
+                Objects: {detection.detectedObjects?.length || 0}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
 
-          <View style={{ marginBottom: 12 }}>
-            <Text style={[commonStyles.text, { fontSize: 14, fontWeight: '500' }]}>
-              • Hand & Gesture Recognition
-            </Text>
-            <Text style={commonStyles.textSecondary}>
-              Track hand movements and recognize gestures
-            </Text>
-          </View>
-
-          <View style={{ marginBottom: 12 }}>
-            <Text style={[commonStyles.text, { fontSize: 14, fontWeight: '500' }]}>
-              • Object Detection
-            </Text>
-            <Text style={commonStyles.textSecondary}>
-              Identify and classify objects in images
-            </Text>
-          </View>
-
-          <View>
-            <Text style={[commonStyles.text, { fontSize: 14, fontWeight: '500' }]}>
-              • Touchless Annotation Control
-            </Text>
-            <Text style={commonStyles.textSecondary}>
-              Control annotations using hand gestures
+      {/* Error Display */}
+      {(aiError || orchestrationError) && (
+        <View style={commonStyles.section}>
+          <View style={[commonStyles.card, { backgroundColor: colors.errorLight }]}>
+            <Text style={[commonStyles.text, { color: colors.error }]}>
+              {aiError || orchestrationError}
             </Text>
           </View>
         </View>
-      </ScrollView>
+      )}
+    </ScrollView>
+  );
 
-      {/* Results Bottom Sheet */}
+  const renderModelsTab = () => (
+    <ScrollView style={commonStyles.container}>
+      <View style={commonStyles.section}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={commonStyles.sectionTitle}>AI Models</Text>
+          <TouchableOpacity 
+            style={buttonStyles.secondary}
+            onPress={optimizeOrchestration}
+            disabled={orchestrationLoading}
+          >
+            {orchestrationLoading ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <>
+                <Icon name="zap" size={16} color={colors.primary} />
+                <Text style={buttonStyles.secondaryText}>Optimize</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {availableModels.map((model) => {
+          const performance = getModelPerformance(model.id);
+          const hasUpdate = updateInfo.some(u => u.modelId === model.id);
+          const benchmark = benchmarks.find(b => b.modelId === model.id);
+          
+          return (
+            <AIModelCard
+              key={model.id}
+              model={model}
+              benchmark={benchmark}
+              isActive={!!activeModels[model.id]}
+              onToggle={handleModelToggle}
+              onBenchmark={handleModelBenchmark}
+              onUpdate={hasUpdate ? handleModelUpdate : undefined}
+              hasUpdate={hasUpdate}
+            />
+          );
+        })}
+      </View>
+    </ScrollView>
+  );
+
+  const renderBenchmarksTab = () => (
+    <ScrollView style={commonStyles.container}>
+      <View style={commonStyles.section}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={commonStyles.sectionTitle}>Model Benchmarks</Text>
+          <TouchableOpacity 
+            style={buttonStyles.secondary}
+            onPress={benchmarkModels}
+          >
+            <Icon name="activity" size={16} color={colors.primary} />
+            <Text style={buttonStyles.secondaryText}>Run All</Text>
+          </TouchableOpacity>
+        </View>
+
+        {benchmarks.length === 0 ? (
+          <View style={commonStyles.card}>
+            <Text style={commonStyles.textSecondary}>No benchmarks available. Run benchmarks to see performance data.</Text>
+          </View>
+        ) : (
+          benchmarks.map((benchmark, index) => {
+            const model = availableModels.find(m => m.id === benchmark.modelId);
+            return (
+              <View key={index} style={commonStyles.card}>
+                <Text style={commonStyles.cardTitle}>{model?.name || benchmark.modelId}</Text>
+                
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <Text style={commonStyles.textSecondary}>Accuracy</Text>
+                  <Text style={commonStyles.text}>{(benchmark.accuracy * 100).toFixed(1)}%</Text>
+                </View>
+                
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <Text style={commonStyles.textSecondary}>Latency</Text>
+                  <Text style={commonStyles.text}>{benchmark.latency.toFixed(1)}ms</Text>
+                </View>
+                
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <Text style={commonStyles.textSecondary}>Throughput</Text>
+                  <Text style={commonStyles.text}>{benchmark.throughput.toFixed(1)} ops/sec</Text>
+                </View>
+                
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <Text style={commonStyles.textSecondary}>Memory Usage</Text>
+                  <Text style={commonStyles.text}>{benchmark.memoryUsage.toFixed(0)} MB</Text>
+                </View>
+                
+                <Text style={[commonStyles.textSecondary, { fontSize: 12 }]}>
+                  {benchmark.timestamp.toLocaleString()}
+                </Text>
+              </View>
+            );
+          })
+        )}
+      </View>
+    </ScrollView>
+  );
+
+  const renderStatsTab = () => {
+    const stats = getSystemStats();
+    
+    return (
+      <ScrollView style={commonStyles.container}>
+        <View style={commonStyles.section}>
+          <Text style={commonStyles.sectionTitle}>System Statistics</Text>
+          
+          <View style={commonStyles.card}>
+            <Text style={commonStyles.cardTitle}>Overview</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+              <Text style={commonStyles.textSecondary}>Total Models</Text>
+              <Text style={commonStyles.text}>{stats.totalModels}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+              <Text style={commonStyles.textSecondary}>Active Models</Text>
+              <Text style={commonStyles.text}>{stats.activeCount}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+              <Text style={commonStyles.textSecondary}>Platform</Text>
+              <Text style={commonStyles.text}>{stats.platform}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+              <Text style={commonStyles.textSecondary}>Avg Accuracy</Text>
+              <Text style={commonStyles.text}>{stats.avgAccuracy}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={commonStyles.textSecondary}>Avg Latency</Text>
+              <Text style={commonStyles.text}>{stats.avgLatency}</Text>
+            </View>
+          </View>
+
+          <View style={commonStyles.card}>
+            <Text style={commonStyles.cardTitle}>Models by Category</Text>
+            {Object.entries(stats.categoryCounts).map(([category, count]) => (
+              <View key={category} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                <Text style={commonStyles.textSecondary}>{category.charAt(0).toUpperCase() + category.slice(1)}</Text>
+                <Text style={commonStyles.text}>{count}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={commonStyles.card}>
+            <Text style={commonStyles.cardTitle}>Performance Data</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+              <Text style={commonStyles.textSecondary}>Benchmarks</Text>
+              <Text style={commonStyles.text}>{stats.benchmarkCount}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+              <Text style={commonStyles.textSecondary}>Updates Available</Text>
+              <Text style={commonStyles.text}>{stats.updateCount}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={commonStyles.textSecondary}>Cache Size</Text>
+              <Text style={commonStyles.text}>{stats.cacheSize}</Text>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+    );
+  };
+
+  return (
+    <SafeAreaView style={commonStyles.safeArea}>
+      {/* Header */}
+      <View style={commonStyles.header}>
+        <Text style={commonStyles.headerTitle}>AI Laboratory</Text>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity onPress={() => setShowSystemStats(true)}>
+            <Icon name="bar-chart-2" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowModelManager(true)}>
+            <Icon name="settings" size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Tab Navigation */}
+      <View style={{ flexDirection: 'row', backgroundColor: colors.surface, paddingHorizontal: 16 }}>
+        {[
+          { key: 'analysis', label: 'Analysis', icon: 'zap' },
+          { key: 'models', label: 'Models', icon: 'cpu' },
+          { key: 'benchmarks', label: 'Benchmarks', icon: 'activity' },
+          { key: 'stats', label: 'Stats', icon: 'bar-chart-2' }
+        ].map((tab) => (
+          <TouchableOpacity
+            key={tab.key}
+            style={{
+              flex: 1,
+              paddingVertical: 12,
+              alignItems: 'center',
+              borderBottomWidth: 2,
+              borderBottomColor: activeTab === tab.key ? colors.primary : 'transparent'
+            }}
+            onPress={() => setActiveTab(tab.key as any)}
+          >
+            <Icon 
+              name={tab.icon} 
+              size={20} 
+              color={activeTab === tab.key ? colors.primary : colors.textSecondary} 
+            />
+            <Text 
+              style={{
+                fontSize: 12,
+                marginTop: 4,
+                color: activeTab === tab.key ? colors.primary : colors.textSecondary,
+                fontWeight: activeTab === tab.key ? '600' : '400'
+              }}
+            >
+              {tab.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Tab Content */}
+      {activeTab === 'analysis' && renderAnalysisTab()}
+      {activeTab === 'models' && renderModelsTab()}
+      {activeTab === 'benchmarks' && renderBenchmarksTab()}
+      {activeTab === 'stats' && renderStatsTab()}
+
+      {/* Model Manager Bottom Sheet */}
       <SimpleBottomSheet
-        isVisible={showResults}
-        onClose={() => setShowResults(false)}
+        isVisible={showModelManager}
+        onClose={() => setShowModelManager(false)}
       >
         <View style={{ padding: 20 }}>
-          <Text style={[commonStyles.subtitle, { marginBottom: 20 }]}>
-            AI Detection Results
+          <Text style={commonStyles.cardTitle}>AI Model Manager</Text>
+          <Text style={commonStyles.textSecondary}>
+            Manage your AI models, check for updates, and optimize performance.
           </Text>
+          
+          <TouchableOpacity 
+            style={[buttonStyles.primary, { marginTop: 16 }]}
+            onPress={() => {
+              setShowModelManager(false);
+              setActiveTab('models');
+            }}
+          >
+            <Icon name="cpu" size={20} color="white" />
+            <Text style={buttonStyles.primaryText}>View Models</Text>
+          </TouchableOpacity>
+        </View>
+      </SimpleBottomSheet>
 
-          {detections.length === 0 ? (
-            <Text style={commonStyles.textSecondary}>
-              No detections yet. Analyze an image to see results.
-            </Text>
-          ) : (
-            <ScrollView style={{ maxHeight: 400 }}>
-              {detections.map((detection, index) => (
-                <View
-                  key={index}
-                  style={{
-                    backgroundColor: colors.backgroundAlt,
-                    borderRadius: 12,
-                    padding: 16,
-                    marginBottom: 12,
-                  }}
-                >
-                  <Text style={[commonStyles.text, { fontWeight: '600', marginBottom: 8 }]}>
-                    Detection #{index + 1}
-                  </Text>
-                  
-                  <Text style={commonStyles.textSecondary}>
-                    Model: {detection.modelUsed}
-                  </Text>
-                  <Text style={commonStyles.textSecondary}>
-                    Confidence: {Math.round(detection.confidence * 100)}%
-                  </Text>
-                  <Text style={commonStyles.textSecondary}>
-                    Objects: {detection.detectedObjects.length}
-                  </Text>
-                  
-                  {detection.faceData && (
-                    <Text style={commonStyles.textSecondary}>
-                      Emotions: {detection.faceData.emotions.map(e => e.emotion).join(', ')}
-                    </Text>
-                  )}
-                  
-                  {detection.gestureData && (
-                    <Text style={commonStyles.textSecondary}>
-                      Gesture: {detection.gestureData.type}
-                    </Text>
-                  )}
-                </View>
-              ))}
-            </ScrollView>
-          )}
+      {/* System Stats Bottom Sheet */}
+      <SimpleBottomSheet
+        isVisible={showSystemStats}
+        onClose={() => setShowSystemStats(false)}
+      >
+        <View style={{ padding: 20 }}>
+          <Text style={commonStyles.cardTitle}>System Statistics</Text>
+          <Text style={commonStyles.textSecondary}>
+            View detailed performance metrics and system information.
+          </Text>
+          
+          <TouchableOpacity 
+            style={[buttonStyles.primary, { marginTop: 16 }]}
+            onPress={() => {
+              setShowSystemStats(false);
+              setActiveTab('stats');
+            }}
+          >
+            <Icon name="bar-chart-2" size={20} color="white" />
+            <Text style={buttonStyles.primaryText}>View Stats</Text>
+          </TouchableOpacity>
         </View>
       </SimpleBottomSheet>
     </SafeAreaView>
   );
-}
+};
+
+export default AIScreen;
