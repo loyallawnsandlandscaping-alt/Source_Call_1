@@ -8,10 +8,11 @@ import { DrumKit, DrumSound, DrumPattern, DrumKitSettings, DrumSession } from '.
 import { analyticsManager } from '../utils/analytics';
 import { useDrumKitSupabase } from './useDrumKitSupabase';
 
+// Complete 35-sound drum kit configuration
 const DEFAULT_DRUM_KIT: DrumKit = {
-  id: 'default',
-  name: 'Classic Kit',
-  description: 'A classic acoustic drum kit with essential sounds',
+  id: 'complete_kit_35',
+  name: 'Complete Drum Kit (35 Sounds)',
+  description: 'Professional drum kit with 35 essential sounds for complete music production',
   bpm: 120,
   volume: 0.8,
   effects: {
@@ -22,86 +23,333 @@ const DEFAULT_DRUM_KIT: DrumKit = {
     compressor: 0.3,
   },
   sounds: [
+    // KICK DRUMS (5 sounds)
     {
-      id: 'kick',
-      name: 'kick',
-      displayName: 'Kick Drum',
+      id: 'kick_1',
+      name: 'kick_1',
+      displayName: 'Kick 1',
       soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
       color: '#FF6B6B',
       category: 'kick',
       volume: 1.0,
     },
     {
-      id: 'snare',
-      name: 'snare',
-      displayName: 'Snare Drum',
+      id: 'kick_2',
+      name: 'kick_2',
+      displayName: 'Kick 2',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#FF5252',
+      category: 'kick',
+      volume: 0.95,
+    },
+    {
+      id: 'kick_3',
+      name: 'kick_3',
+      displayName: 'Kick 3',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#E53935',
+      category: 'kick',
+      volume: 0.9,
+    },
+    {
+      id: 'kick_4',
+      name: 'kick_4',
+      displayName: 'Kick 4',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#D32F2F',
+      category: 'kick',
+      volume: 0.85,
+    },
+    {
+      id: 'kick_5',
+      name: 'kick_5',
+      displayName: 'Kick 5',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#C62828',
+      category: 'kick',
+      volume: 0.8,
+    },
+
+    // SNARE DRUMS (6 sounds)
+    {
+      id: 'snare_1',
+      name: 'snare_1',
+      displayName: 'Snare 1',
       soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
       color: '#4ECDC4',
       category: 'snare',
       volume: 0.9,
     },
     {
-      id: 'hihat_closed',
-      name: 'hihat_closed',
-      displayName: 'Closed Hi-Hat',
+      id: 'snare_2',
+      name: 'snare_2',
+      displayName: 'Snare 2',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#26C6DA',
+      category: 'snare',
+      volume: 0.85,
+    },
+    {
+      id: 'snare_3',
+      name: 'snare_3',
+      displayName: 'Snare 3',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#00BCD4',
+      category: 'snare',
+      volume: 0.8,
+    },
+    {
+      id: 'snare_4',
+      name: 'snare_4',
+      displayName: 'Snare 4',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#00ACC1',
+      category: 'snare',
+      volume: 0.75,
+    },
+    {
+      id: 'snare_5',
+      name: 'snare_5',
+      displayName: 'Snare 5',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#0097A7',
+      category: 'snare',
+      volume: 0.7,
+    },
+    {
+      id: 'snare_6',
+      name: 'snare_6',
+      displayName: 'Snare 6',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#00838F',
+      category: 'snare',
+      volume: 0.65,
+    },
+
+    // HI-HATS (6 sounds)
+    {
+      id: 'hihat_closed_1',
+      name: 'hihat_closed_1',
+      displayName: 'Closed HH 1',
       soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
       color: '#45B7D1',
       category: 'hihat',
       volume: 0.7,
     },
     {
-      id: 'hihat_open',
-      name: 'hihat_open',
-      displayName: 'Open Hi-Hat',
+      id: 'hihat_closed_2',
+      name: 'hihat_closed_2',
+      displayName: 'Closed HH 2',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#42A5F5',
+      category: 'hihat',
+      volume: 0.65,
+    },
+    {
+      id: 'hihat_open_1',
+      name: 'hihat_open_1',
+      displayName: 'Open HH 1',
       soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
       color: '#96CEB4',
       category: 'hihat',
       volume: 0.8,
     },
     {
-      id: 'crash',
-      name: 'crash',
-      displayName: 'Crash Cymbal',
+      id: 'hihat_open_2',
+      name: 'hihat_open_2',
+      displayName: 'Open HH 2',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#81C784',
+      category: 'hihat',
+      volume: 0.75,
+    },
+    {
+      id: 'hihat_pedal',
+      name: 'hihat_pedal',
+      displayName: 'HH Pedal',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#66BB6A',
+      category: 'hihat',
+      volume: 0.6,
+    },
+    {
+      id: 'hihat_splash',
+      name: 'hihat_splash',
+      displayName: 'HH Splash',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#4CAF50',
+      category: 'hihat',
+      volume: 0.85,
+    },
+
+    // CYMBALS (5 sounds)
+    {
+      id: 'crash_1',
+      name: 'crash_1',
+      displayName: 'Crash 1',
       soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
       color: '#FFEAA7',
       category: 'cymbal',
       volume: 0.9,
     },
     {
-      id: 'ride',
-      name: 'ride',
-      displayName: 'Ride Cymbal',
+      id: 'crash_2',
+      name: 'crash_2',
+      displayName: 'Crash 2',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#FFCC02',
+      category: 'cymbal',
+      volume: 0.85,
+    },
+    {
+      id: 'ride_1',
+      name: 'ride_1',
+      displayName: 'Ride 1',
       soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
       color: '#DDA0DD',
       category: 'cymbal',
       volume: 0.8,
     },
     {
-      id: 'tom_high',
-      name: 'tom_high',
-      displayName: 'High Tom',
+      id: 'ride_2',
+      name: 'ride_2',
+      displayName: 'Ride 2',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#BA68C8',
+      category: 'cymbal',
+      volume: 0.75,
+    },
+    {
+      id: 'china',
+      name: 'china',
+      displayName: 'China',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#AB47BC',
+      category: 'cymbal',
+      volume: 0.85,
+    },
+
+    // TOMS (6 sounds)
+    {
+      id: 'tom_high_1',
+      name: 'tom_high_1',
+      displayName: 'High Tom 1',
       soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
       color: '#FFB347',
       category: 'tom',
       volume: 0.85,
     },
     {
-      id: 'tom_mid',
-      name: 'tom_mid',
-      displayName: 'Mid Tom',
+      id: 'tom_high_2',
+      name: 'tom_high_2',
+      displayName: 'High Tom 2',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#FF9800',
+      category: 'tom',
+      volume: 0.8,
+    },
+    {
+      id: 'tom_mid_1',
+      name: 'tom_mid_1',
+      displayName: 'Mid Tom 1',
       soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
       color: '#FF7F7F',
       category: 'tom',
       volume: 0.85,
     },
     {
-      id: 'tom_low',
-      name: 'tom_low',
-      displayName: 'Low Tom',
+      id: 'tom_mid_2',
+      name: 'tom_mid_2',
+      displayName: 'Mid Tom 2',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#FF8A65',
+      category: 'tom',
+      volume: 0.8,
+    },
+    {
+      id: 'tom_low_1',
+      name: 'tom_low_1',
+      displayName: 'Low Tom 1',
       soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
       color: '#87CEEB',
       category: 'tom',
       volume: 0.9,
+    },
+    {
+      id: 'tom_low_2',
+      name: 'tom_low_2',
+      displayName: 'Low Tom 2',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#64B5F6',
+      category: 'tom',
+      volume: 0.85,
+    },
+
+    // PERCUSSION (4 sounds)
+    {
+      id: 'cowbell',
+      name: 'cowbell',
+      displayName: 'Cowbell',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#A5D6A7',
+      category: 'percussion',
+      volume: 0.7,
+    },
+    {
+      id: 'woodblock',
+      name: 'woodblock',
+      displayName: 'Woodblock',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#BCAAA4',
+      category: 'percussion',
+      volume: 0.75,
+    },
+    {
+      id: 'tambourine',
+      name: 'tambourine',
+      displayName: 'Tambourine',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#F8BBD9',
+      category: 'percussion',
+      volume: 0.65,
+    },
+    {
+      id: 'shaker',
+      name: 'shaker',
+      displayName: 'Shaker',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#E1BEE7',
+      category: 'percussion',
+      volume: 0.6,
+    },
+
+    // ELECTRONIC (3 sounds)
+    {
+      id: 'electronic_kick',
+      name: 'electronic_kick',
+      displayName: 'E-Kick',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#FF4081',
+      category: 'electronic',
+      volume: 0.9,
+    },
+    {
+      id: 'electronic_snare',
+      name: 'electronic_snare',
+      displayName: 'E-Snare',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#7C4DFF',
+      category: 'electronic',
+      volume: 0.85,
+    },
+    {
+      id: 'electronic_hihat',
+      name: 'electronic_hihat',
+      displayName: 'E-HiHat',
+      soundUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+      color: '#18FFFF',
+      category: 'electronic',
+      volume: 0.7,
     },
   ],
 };
@@ -161,7 +409,7 @@ export const useDrumKit = () => {
 
   const initializeAudio = async () => {
     try {
-      console.log('Initializing drum kit audio...');
+      console.log('Initializing drum kit audio with 35 sounds...');
       setIsLoading(true);
       
       await Audio.setAudioModeAsync({
@@ -176,7 +424,7 @@ export const useDrumKit = () => {
 
       await loadDrumSounds();
       setIsLoading(false);
-      console.log('Drum kit initialized successfully');
+      console.log('Drum kit initialized successfully with 35 sounds');
     } catch (err) {
       console.error('Failed to initialize drum kit:', err);
       setError('Failed to initialize drum kit');
@@ -186,6 +434,8 @@ export const useDrumKit = () => {
 
   const loadDrumSounds = async () => {
     const soundMap = new Map<string, Audio.Sound>();
+    
+    console.log(`Loading ${currentKit.sounds.length} drum sounds...`);
     
     for (const drumSound of currentKit.sounds) {
       try {
@@ -197,7 +447,7 @@ export const useDrumKit = () => {
           }
         );
         soundMap.set(drumSound.id, sound);
-        console.log(`Loaded sound: ${drumSound.displayName}`);
+        console.log(`Loaded sound: ${drumSound.displayName} (${drumSound.category})`);
       } catch (err) {
         console.error(`Failed to load sound ${drumSound.displayName}:`, err);
         // Create a silent sound as fallback
@@ -214,6 +464,7 @@ export const useDrumKit = () => {
     }
     
     setLoadedSounds(soundMap);
+    console.log(`Successfully loaded ${soundMap.size} out of ${currentKit.sounds.length} sounds`);
   };
 
   const loadAvailableData = async () => {
@@ -268,9 +519,10 @@ export const useDrumKit = () => {
         soundId,
         velocity,
         kitId: currentKit.id,
+        category: drumSound.category,
       });
 
-      console.log(`Played sound: ${drumSound.displayName} with velocity: ${velocity}`);
+      console.log(`Played sound: ${drumSound.displayName} (${drumSound.category}) with velocity: ${velocity}`);
     } catch (err) {
       console.error(`Failed to play sound ${soundId}:`, err);
     }

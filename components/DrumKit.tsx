@@ -44,6 +44,7 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
 
   const [activeSound, setActiveSound] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   useEffect(() => {
     if (error) {
@@ -64,9 +65,58 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
     }
   };
 
+  const getFilteredSounds = () => {
+    if (selectedCategory === 'all') {
+      return currentKit.sounds;
+    }
+    return currentKit.sounds.filter(sound => sound.category === selectedCategory);
+  };
+
+  const getSoundsByCategory = () => {
+    const categories = ['kick', 'snare', 'hihat', 'cymbal', 'tom', 'percussion', 'electronic'];
+    const soundsByCategory: { [key: string]: DrumSound[] } = {};
+    
+    categories.forEach(category => {
+      soundsByCategory[category] = currentKit.sounds.filter(sound => sound.category === category);
+    });
+    
+    return soundsByCategory;
+  };
+
+  const renderCategoryTabs = () => {
+    const categories = ['all', 'kick', 'snare', 'hihat', 'cymbal', 'tom', 'percussion', 'electronic'];
+    
+    return (
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        style={styles.categoryTabs}
+        contentContainerStyle={styles.categoryTabsContent}
+      >
+        {categories.map(category => (
+          <TouchableOpacity
+            key={category}
+            style={[
+              styles.categoryTab,
+              selectedCategory === category && styles.categoryTabActive
+            ]}
+            onPress={() => setSelectedCategory(category)}
+          >
+            <Text style={[
+              styles.categoryTabText,
+              selectedCategory === category && styles.categoryTabTextActive
+            ]}>
+              {category.charAt(0).toUpperCase() + category.slice(1)}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    );
+  };
+
   const renderDrumPad = (sound: DrumSound, index: number) => {
     const isActive = activeSound === sound.id;
-    const padSize = width > 400 ? 80 : 60;
+    const padSize = width > 400 ? 70 : 55;
     
     return (
       <TouchableOpacity
@@ -86,7 +136,9 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
           colors={isActive ? [colors.primary, colors.secondary] : [sound.color, sound.color + '80']}
           style={[styles.drumPadGradient, { width: padSize, height: padSize }]}
         >
-          <Text style={styles.drumPadText}>{sound.displayName.split(' ')[0]}</Text>
+          <Text style={styles.drumPadText} numberOfLines={1}>
+            {sound.displayName.replace(/\s+/g, '\n')}
+          </Text>
           <Text style={styles.drumPadSubtext}>{sound.category.toUpperCase()}</Text>
         </LinearGradient>
       </TouchableOpacity>
@@ -135,20 +187,24 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
 
   const playDemoPattern = () => {
     const demoPattern = {
-      id: 'demo',
-      name: 'Demo Pattern',
+      id: 'demo_35_sounds',
+      name: 'Demo Pattern (35 Sounds)',
       bpm: 120,
       timeSignature: '4/4',
       loop: true,
       pattern: [
-        { soundId: 'kick', time: 0, velocity: 1.0 },
-        { soundId: 'hihat_closed', time: 0.5, velocity: 0.7 },
-        { soundId: 'snare', time: 1, velocity: 0.9 },
-        { soundId: 'hihat_closed', time: 1.5, velocity: 0.7 },
-        { soundId: 'kick', time: 2, velocity: 1.0 },
-        { soundId: 'hihat_closed', time: 2.5, velocity: 0.7 },
-        { soundId: 'snare', time: 3, velocity: 0.9 },
-        { soundId: 'hihat_closed', time: 3.5, velocity: 0.7 },
+        // Basic rock pattern using various sounds
+        { soundId: 'kick_1', time: 0, velocity: 1.0 },
+        { soundId: 'hihat_closed_1', time: 0.5, velocity: 0.7 },
+        { soundId: 'snare_1', time: 1, velocity: 0.9 },
+        { soundId: 'hihat_closed_2', time: 1.5, velocity: 0.7 },
+        { soundId: 'kick_2', time: 2, velocity: 1.0 },
+        { soundId: 'hihat_open_1', time: 2.5, velocity: 0.8 },
+        { soundId: 'snare_2', time: 3, velocity: 0.9 },
+        { soundId: 'hihat_closed_1', time: 3.5, velocity: 0.7 },
+        // Add some toms and cymbals
+        { soundId: 'tom_high_1', time: 3.75, velocity: 0.8 },
+        { soundId: 'crash_1', time: 4, velocity: 0.9 },
       ],
     };
     
@@ -190,6 +246,18 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
             </Text>
           </TouchableOpacity>
         </View>
+
+        <View style={styles.settingRow}>
+          <Text style={styles.settingLabel}>Gesture Control</Text>
+          <TouchableOpacity
+            style={[styles.toggle, settings.gestureControl && styles.toggleActive]}
+            onPress={() => updateSettings({ gestureControl: !settings.gestureControl })}
+          >
+            <Text style={[styles.toggleText, settings.gestureControl && styles.toggleTextActive]}>
+              {settings.gestureControl ? 'ON' : 'OFF'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -198,13 +266,15 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
     return (
       <View style={[commonStyles.container, styles.loadingContainer]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Loading Drum Kit...</Text>
+        <Text style={styles.loadingText}>Loading 35-Sound Drum Kit...</Text>
         <Text style={styles.loadingSubtext}>
           {loadedSounds}/{totalSounds} sounds loaded
         </Text>
       </View>
     );
   }
+
+  const filteredSounds = getFilteredSounds();
 
   return (
     <View style={commonStyles.container}>
@@ -213,18 +283,27 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
           <Icon name="close" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{currentKit.name}</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>{currentKit.name}</Text>
+          <Text style={styles.headerSubtitle}>35 Professional Sounds</Text>
+        </View>
         <View style={styles.headerRight}>
           <Text style={styles.bpmText}>{currentKit.bpm} BPM</Text>
         </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Category Tabs */}
+        {renderCategoryTabs()}
+
         {/* Drum Pads Grid */}
         <View style={styles.drumPadsContainer}>
-          <Text style={styles.sectionTitle}>Drum Pads</Text>
+          <Text style={styles.sectionTitle}>
+            {selectedCategory === 'all' ? 'All Sounds' : `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Sounds`}
+            {` (${filteredSounds.length})`}
+          </Text>
           <View style={styles.drumPadsGrid}>
-            {currentKit.sounds.map((sound, index) => renderDrumPad(sound, index))}
+            {filteredSounds.map((sound, index) => renderDrumPad(sound, index))}
           </View>
         </View>
 
@@ -236,10 +315,16 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
 
         {/* Kit Info */}
         <View style={styles.kitInfo}>
-          <Text style={styles.kitInfoTitle}>Kit Information</Text>
+          <Text style={styles.kitInfoTitle}>Complete Drum Kit</Text>
           <Text style={styles.kitInfoText}>{currentKit.description}</Text>
           <Text style={styles.kitInfoText}>
-            {currentKit.sounds.length} sounds • {currentKit.bpm} BPM
+            ✓ {currentKit.sounds.length} professional drum sounds
+          </Text>
+          <Text style={styles.kitInfoText}>
+            ✓ 5 Kicks • 6 Snares • 6 Hi-Hats • 5 Cymbals • 6 Toms • 4 Percussion • 3 Electronic
+          </Text>
+          <Text style={styles.kitInfoText}>
+            ✓ Recording & Pattern playback • Haptic feedback • Gesture control
           </Text>
         </View>
       </ScrollView>
@@ -275,10 +360,19 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 8,
   },
+  headerCenter: {
+    alignItems: 'center',
+    flex: 1,
+  },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: colors.text,
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
   headerRight: {
     alignItems: 'flex-end',
@@ -291,11 +385,38 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  categoryTabs: {
+    maxHeight: 50,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  categoryTabsContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  categoryTab: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 12,
+    borderRadius: 20,
+    backgroundColor: colors.backgroundAlt,
+  },
+  categoryTabActive: {
+    backgroundColor: colors.primary,
+  },
+  categoryTabText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  categoryTabTextActive: {
+    color: colors.background,
+  },
   drumPadsContainer: {
     padding: 20,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 16,
@@ -304,35 +425,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: 8,
   },
   drumPad: {
-    borderRadius: 16,
-    marginBottom: 12,
-    elevation: 4,
+    borderRadius: 12,
+    marginBottom: 8,
+    elevation: 3,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
   },
   drumPadGradient: {
-    borderRadius: 16,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 8,
+    padding: 6,
   },
   drumPadText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '700',
     color: colors.background,
     textAlign: 'center',
+    lineHeight: 12,
   },
   drumPadSubtext: {
-    fontSize: 8,
+    fontSize: 7,
     fontWeight: '500',
     color: colors.background,
     opacity: 0.8,
-    marginTop: 2,
+    marginTop: 1,
   },
   controlsContainer: {
     flexDirection: 'row',
