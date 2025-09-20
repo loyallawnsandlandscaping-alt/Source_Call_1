@@ -1,47 +1,77 @@
+
 {
   "expo": {
     "name": "Source Call",
     "slug": "source-call",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/natively-dark.png",
-    "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
+    "icon": "./assets/images/final_quest_240x240.png",
+    "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/images/natively-dark.png",
+      "image": "./assets/images/final_quest_240x240.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.sourcecall",
+      "bundleIdentifier": "com.sourcecall.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "NSMicrophoneUsageDescription": "This app uses the microphone to record drum sessions and enable voice features.",
+        "NSCameraUsageDescription": "This app uses the camera for video calling and AI-powered annotations.",
+        "NSLocationWhenInUseUsageDescription": "This app uses location for enhanced AI features and analytics."
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/natively-dark.png",
-        "backgroundColor": "#000000"
+        "foregroundImage": "./assets/images/final_quest_240x240.png",
+        "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.sourcecall"
+      "package": "com.sourcecall.app",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.VIBRATE",
+        "android.permission.WAKE_LOCK"
+      ]
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",
       "bundler": "metro"
     },
     "plugins": [
-      "expo-font",
       "expo-router",
-      "expo-web-browser"
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow Source Call to access your microphone for recording drum sessions and voice features."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Source Call to access your camera for video calling and AI annotations."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Source Call to use your location for enhanced AI features."
+        }
+      ]
     ],
-    "scheme": "sourcecall",
-    "experiments": {
-      "typedRoutes": true
-    },
+    "scheme": "source-call",
     "extra": {
-      "router": {}
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "your-project-id"
+      }
     }
   }
 }
