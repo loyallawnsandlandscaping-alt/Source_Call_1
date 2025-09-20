@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DrumKit, DrumSound, DrumPattern, DrumKitSettings, DrumSession } from '../types/drumKit';
 import { analyticsManager } from '../utils/analytics';
 import { useDrumKitSupabase } from './useDrumKitSupabase';
+import { DrumKitAudioManager } from '../utils/drumKitAudioManager';
 
 // Complete 35-sound drum kit configuration with original sound names from loyallawnsandlandscaping-alt/Drum-Kit
 const DEFAULT_DRUM_KIT: DrumKit = {
@@ -98,6 +99,11 @@ export const useDrumKit = () => {
   const [availableKits, setAvailableKits] = useState<DrumKit[]>([]);
   const [availablePatterns, setAvailablePatterns] = useState<DrumPattern[]>([]);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [audioFilesStatus, setAudioFilesStatus] = useState<{
+    total: number;
+    existing: number;
+    missing: string[];
+  }>({ total: 35, existing: 0, missing: [] });
 
   const metronomeRef = useRef<Audio.Sound | null>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
@@ -135,6 +141,22 @@ export const useDrumKit = () => {
       setIsLoading(true);
       setError(null);
       
+      // Initialize sounds directory
+      await DrumKitAudioManager.initializeSoundsDirectory();
+      
+      // Check which audio files are available
+      const missingFilesReport = await DrumKitAudioManager.getMissingFilesReport();
+      setAudioFilesStatus({
+        total: missingFilesReport.totalFiles,
+        existing: missingFilesReport.existingFiles,
+        missing: missingFilesReport.missingFiles,
+      });
+      
+      console.log(`Audio files status: ${missingFilesReport.existingFiles}/${missingFilesReport.totalFiles} available`);
+      if (missingFilesReport.missingFiles.length > 0) {
+        console.warn('Missing audio files:', missingFilesReport.missingFiles);
+      }
+      
       // Configure audio mode for low latency
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
@@ -166,10 +188,12 @@ export const useDrumKit = () => {
     for (let i = 0; i < currentKit.sounds.length; i++) {
       const drumSound = currentKit.sounds[i];
       try {
+        // Get the audio URI (real file or fallback)
+        const audioUri = await getAudioFileUri(drumSound.soundFile);
+        
         // Create primary sound instance
-        const soundUri = getAudioFileUri(drumSound.soundFile);
         const { sound } = await Audio.Sound.createAsync(
-          soundUri,
+          audioUri,
           { 
             shouldPlay: false,
             volume: drumSound.volume * settings.masterVolume,
@@ -181,12 +205,12 @@ export const useDrumKit = () => {
         await sound.setStatusAsync({ shouldPlay: false });
         soundMap.set(drumSound.id, sound);
         
-        // Create sound pool for polyphonic playback (3 instances per sound)
+        // Create sound pool for polyphonic playback (4 instances per sound for better polyphony)
         const pool: Audio.Sound[] = [sound];
-        for (let j = 1; j < 3; j++) {
+        for (let j = 1; j < 4; j++) {
           try {
             const { sound: poolSound } = await Audio.Sound.createAsync(
-              soundUri,
+              audioUri,
               { 
                 shouldPlay: false,
                 volume: drumSound.volume * settings.masterVolume,
@@ -224,13 +248,35 @@ export const useDrumKit = () => {
     console.log(`Successfully loaded ${soundMap.size} out of ${currentKit.sounds.length} sounds with sound pools`);
   };
 
-  const getAudioFileUri = (soundFile: string) => {
-    // Check if file exists in assets/sounds directory
-    const assetPath = `../assets/sounds/${soundFile}`;
-    
-    // For now, use the silence.mp3 as fallback until actual drum files are added
-    // In production, this would reference the actual drum kit files
-    return require('../assets/sounds/silence.mp3');
+  const getAudioFileUri = async (soundFile: string) => {
+    try {
+      // First, try to get the real audio file
+      const audioInfo = await DrumKitAudioManager.getAudioUri(soundFile);
+      
+      if (audioInfo.isLocal && audioInfo.uri !== 'silence') {
+        // Real audio file exists
+        return { uri: audioInfo.uri };
+      } else {
+        // Check if file exists in assets bundle
+        const assetPath = `../assets/sounds/${soundFile}`;
+        try {
+          // Try to create a sound to test if the asset exists
+          const testSound = await Audio.Sound.createAsync(
+            require(assetPath),
+            { shouldPlay: false }
+          );
+          await testSound.sound.unloadAsync();
+          return require(assetPath);
+        } catch (assetErr) {
+          // Asset doesn't exist, use silence fallback
+          console.warn(`Using silence fallback for missing file: ${soundFile}`);
+          return require('../assets/sounds/silence.mp3');
+        }
+      }
+    } catch (err) {
+      console.warn(`Error getting audio URI for ${soundFile}:`, err);
+      return require('../assets/sounds/silence.mp3');
+    }
   };
 
   const loadAvailableData = async () => {
@@ -635,6 +681,7 @@ export const useDrumKit = () => {
     availableKits,
     availablePatterns,
     loadingProgress,
+    audioFilesStatus,
     
     // Actions
     playSound,

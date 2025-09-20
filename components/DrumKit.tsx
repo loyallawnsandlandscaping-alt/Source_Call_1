@@ -41,10 +41,12 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
     loadedSounds,
     totalSounds,
     loadingProgress,
+    audioFilesStatus,
   } = useDrumKit();
 
   const [activeSound, setActiveSound] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showAudioStatus, setShowAudioStatus] = useState(false);
 
   useEffect(() => {
     if (error) {
@@ -135,6 +137,14 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
         <Icon name="settings" size={24} color={colors.text} />
         <Text style={styles.controlButtonText}>Settings</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.controlButton}
+        onPress={() => setShowAudioStatus(!showAudioStatus)}
+      >
+        <Icon name="info" size={24} color={colors.text} />
+        <Text style={styles.controlButtonText}>Audio</Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -168,6 +178,69 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
     };
     
     playPattern(demoPattern);
+  };
+
+  const renderAudioStatus = () => {
+    if (!showAudioStatus) return null;
+
+    return (
+      <View style={styles.audioStatusContainer}>
+        <Text style={styles.audioStatusTitle}>Audio Files Status</Text>
+        
+        <View style={styles.statusRow}>
+          <Text style={styles.statusLabel}>Total Sounds:</Text>
+          <Text style={styles.statusValue}>{audioFilesStatus.total}</Text>
+        </View>
+        
+        <View style={styles.statusRow}>
+          <Text style={styles.statusLabel}>Available:</Text>
+          <Text style={[styles.statusValue, { color: colors.success }]}>
+            {audioFilesStatus.existing}
+          </Text>
+        </View>
+        
+        <View style={styles.statusRow}>
+          <Text style={styles.statusLabel}>Missing:</Text>
+          <Text style={[styles.statusValue, { color: colors.error }]}>
+            {audioFilesStatus.missing.length}
+          </Text>
+        </View>
+
+        {audioFilesStatus.missing.length > 0 && (
+          <View style={styles.missingFilesContainer}>
+            <Text style={styles.missingFilesTitle}>Missing Files:</Text>
+            <ScrollView style={styles.missingFilesList} nestedScrollEnabled>
+              {audioFilesStatus.missing.slice(0, 10).map((fileName, index) => (
+                <Text key={index} style={styles.missingFileName}>
+                  • {fileName}
+                </Text>
+              ))}
+              {audioFilesStatus.missing.length > 10 && (
+                <Text style={styles.missingFileName}>
+                  ... and {audioFilesStatus.missing.length - 10} more
+                </Text>
+              )}
+            </ScrollView>
+          </View>
+        )}
+
+        <View style={styles.instructionsContainer}>
+          <Text style={styles.instructionsTitle}>Installation Instructions:</Text>
+          <Text style={styles.instructionsText}>
+            1. Download all 35 .wav files from loyallawnsandlandscaping-alt/Drum-Kit/public/sounds
+          </Text>
+          <Text style={styles.instructionsText}>
+            2. Copy them to the app's assets/sounds/ directory
+          </Text>
+          <Text style={styles.instructionsText}>
+            3. Restart the app to load the new sounds
+          </Text>
+          <Text style={styles.instructionsText}>
+            4. Missing files will use silent fallbacks until added
+          </Text>
+        </View>
+      </View>
+    );
   };
 
   const renderSettings = () => {
@@ -261,6 +334,11 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
         <Text style={styles.loadingNote}>
           Preparing 35 professional drum sounds for low-latency playback
         </Text>
+        {audioFilesStatus.missing.length > 0 && (
+          <Text style={styles.loadingWarning}>
+            ⚠️ {audioFilesStatus.missing.length} audio files missing - using silent fallbacks
+          </Text>
+        )}
       </View>
     );
   }
@@ -279,6 +357,11 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
           <Text style={styles.headerSubtitle}>
             {currentKit.sounds.length} Professional Sounds • Low Latency
           </Text>
+          {audioFilesStatus.missing.length > 0 && (
+            <Text style={styles.headerWarning}>
+              ⚠️ {audioFilesStatus.missing.length} files missing
+            </Text>
+          )}
         </View>
         <View style={styles.headerRight}>
           <Text style={styles.bpmText}>{currentKit.bpm} BPM</Text>
@@ -299,6 +382,9 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
         {/* Controls */}
         {renderControls()}
 
+        {/* Audio Status */}
+        {renderAudioStatus()}
+
         {/* Settings */}
         {renderSettings()}
 
@@ -310,13 +396,16 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
             ✓ {currentKit.sounds.length} professional drum sounds with original names
           </Text>
           <Text style={styles.kitInfoText}>
-            ✓ Low-latency playback with sound pooling for polyphonic performance
+            ✓ Low-latency playback with 4x sound pooling for polyphonic performance
           </Text>
           <Text style={styles.kitInfoText}>
             ✓ Recording & Pattern playback • Haptic feedback • Gesture control
           </Text>
           <Text style={styles.kitInfoText}>
-            ✓ No categories - all sounds displayed with their original names from loyallawnsandlandscaping-alt/Drum-Kit
+            ✓ Real audio files from loyallawnsandlandscaping-alt/Drum-Kit/public/sounds
+          </Text>
+          <Text style={styles.kitInfoText}>
+            ✓ Automatic fallback to silent sounds for missing files
           </Text>
         </View>
       </ScrollView>
@@ -349,6 +438,13 @@ const styles = StyleSheet.create({
     marginTop: 16,
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  loadingWarning: {
+    fontSize: 12,
+    color: colors.error,
+    marginTop: 8,
+    textAlign: 'center',
+    fontWeight: '600',
   },
   progressBar: {
     width: '80%',
@@ -390,6 +486,13 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 2,
     textAlign: 'center',
+  },
+  headerWarning: {
+    fontSize: 10,
+    color: colors.error,
+    marginTop: 2,
+    textAlign: 'center',
+    fontWeight: '600',
   },
   headerRight: {
     alignItems: 'flex-end',
@@ -455,7 +558,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 12,
     backgroundColor: colors.backgroundAlt,
-    minWidth: 80,
+    minWidth: 70,
   },
   controlButtonActive: {
     backgroundColor: colors.primary,
@@ -471,6 +574,75 @@ const styles = StyleSheet.create({
   },
   controlButtonTextActive: {
     color: colors.background,
+  },
+  audioStatusContainer: {
+    padding: 20,
+    backgroundColor: colors.backgroundAlt,
+    margin: 20,
+    borderRadius: 16,
+  },
+  audioStatusTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 16,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  statusLabel: {
+    fontSize: 16,
+    color: colors.text,
+  },
+  statusValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  missingFilesContainer: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.error,
+  },
+  missingFilesTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.error,
+    marginBottom: 8,
+  },
+  missingFilesList: {
+    maxHeight: 120,
+  },
+  missingFileName: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginBottom: 2,
+  },
+  instructionsContainer: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
+  },
+  instructionsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+    marginBottom: 8,
+  },
+  instructionsText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginBottom: 4,
+    lineHeight: 16,
   },
   settingsContainer: {
     padding: 20,
