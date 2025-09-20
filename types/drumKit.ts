@@ -3,7 +3,7 @@ export interface DrumSound {
   id: string;
   name: string;
   displayName: string;
-  soundUrl: string;
+  soundFile: string; // Local file path in assets/sounds/
   color: string;
   volume: number;
   pitch?: number;

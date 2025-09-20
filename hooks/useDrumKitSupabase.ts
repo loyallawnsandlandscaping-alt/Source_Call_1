@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase, isSupabaseConfigured } from '../utils/supabase';
 import { DrumKit, DrumPattern, DrumSession, DrumKitSettings } from '../types/drumKit';
+import { supabase, isSupabaseConfigured } from '../utils/supabase';
 import { analyticsManager } from '../utils/analytics';
 
 export const useDrumKitSupabase = () => {
@@ -10,8 +10,8 @@ export const useDrumKitSupabase = () => {
 
   // Save drum kit to Supabase
   const saveDrumKit = useCallback(async (drumKit: DrumKit): Promise<string | null> => {
-    if (!isSupabaseConfigured()) {
-      console.log('Supabase not configured, skipping drum kit save');
+    if (!isSupabaseConfigured) {
+      console.warn('Supabase not configured, skipping drum kit save');
       return null;
     }
 
@@ -19,24 +19,33 @@ export const useDrumKitSupabase = () => {
       setIsLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const kitData = {
+        user_id: user.id,
+        name: drumKit.name,
+        description: drumKit.description,
+        bpm: drumKit.bpm,
+        volume: drumKit.volume,
+        effects: drumKit.effects,
+        sounds: drumKit.sounds,
+      };
+
+      const { data, error: saveError } = await supabase
         .from('drum_kits')
-        .insert({
-          name: drumKit.name,
-          description: drumKit.description,
-          sounds: drumKit.sounds,
-          bpm: drumKit.bpm,
-          volume: drumKit.volume,
-          effects: drumKit.effects,
-        })
-        .select()
+        .upsert(kitData, { onConflict: 'id' })
+        .select('id')
         .single();
 
-      if (error) throw error;
+      if (saveError) {
+        throw saveError;
+      }
 
       analyticsManager.trackEvent('drum_kit_saved', {
         kitId: data.id,
-        name: drumKit.name,
         soundCount: drumKit.sounds.length,
       });
 
@@ -53,8 +62,8 @@ export const useDrumKitSupabase = () => {
 
   // Load drum kits from Supabase
   const loadDrumKits = useCallback(async (): Promise<DrumKit[]> => {
-    if (!isSupabaseConfigured()) {
-      console.log('Supabase not configured, returning empty drum kits');
+    if (!isSupabaseConfigured) {
+      console.warn('Supabase not configured, returning empty drum kits');
       return [];
     }
 
@@ -62,18 +71,25 @@ export const useDrumKitSupabase = () => {
       setIsLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const { data, error: loadError } = await supabase
         .from('drum_kits')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (loadError) {
+        throw loadError;
+      }
 
-      const drumKits: DrumKit[] = data.map(kit => ({
+      const drumKits: DrumKit[] = (data || []).map(kit => ({
         id: kit.id,
         name: kit.name,
         description: kit.description || '',
-        sounds: kit.sounds || [],
         bpm: kit.bpm || 120,
         volume: kit.volume || 0.8,
         effects: kit.effects || {
@@ -83,6 +99,7 @@ export const useDrumKitSupabase = () => {
           filter: 0,
           compressor: 0.3,
         },
+        sounds: kit.sounds || [],
       }));
 
       console.log(`Loaded ${drumKits.length} drum kits from Supabase`);
@@ -98,8 +115,8 @@ export const useDrumKitSupabase = () => {
 
   // Save drum pattern to Supabase
   const saveDrumPattern = useCallback(async (pattern: DrumPattern, kitId: string): Promise<string | null> => {
-    if (!isSupabaseConfigured()) {
-      console.log('Supabase not configured, skipping pattern save');
+    if (!isSupabaseConfigured) {
+      console.warn('Supabase not configured, skipping pattern save');
       return null;
     }
 
@@ -107,26 +124,35 @@ export const useDrumKitSupabase = () => {
       setIsLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const patternData = {
+        user_id: user.id,
+        kit_id: kitId,
+        name: pattern.name,
+        bpm: pattern.bpm,
+        time_signature: pattern.timeSignature,
+        loop: pattern.loop,
+        pattern: pattern.pattern,
+      };
+
+      const { data, error: saveError } = await supabase
         .from('drum_patterns')
-        .insert({
-          kit_id: kitId,
-          name: pattern.name,
-          pattern: pattern.pattern,
-          bpm: pattern.bpm,
-          time_signature: pattern.timeSignature,
-          loop: pattern.loop,
-        })
-        .select()
+        .upsert(patternData, { onConflict: 'id' })
+        .select('id')
         .single();
 
-      if (error) throw error;
+      if (saveError) {
+        throw saveError;
+      }
 
       analyticsManager.trackEvent('drum_pattern_saved', {
         patternId: data.id,
         kitId,
-        name: pattern.name,
-        bpm: pattern.bpm,
+        beatCount: pattern.pattern.length,
       });
 
       console.log('Drum pattern saved to Supabase:', data.id);
@@ -142,8 +168,8 @@ export const useDrumKitSupabase = () => {
 
   // Load drum patterns from Supabase
   const loadDrumPatterns = useCallback(async (kitId?: string): Promise<DrumPattern[]> => {
-    if (!isSupabaseConfigured()) {
-      console.log('Supabase not configured, returning empty patterns');
+    if (!isSupabaseConfigured) {
+      console.warn('Supabase not configured, returning empty patterns');
       return [];
     }
 
@@ -151,26 +177,33 @@ export const useDrumKitSupabase = () => {
       setIsLoading(true);
       setError(null);
 
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       let query = supabase
         .from('drum_patterns')
         .select('*')
-        .order('created_at', { ascending: false });
+        .eq('user_id', user.id);
 
       if (kitId) {
         query = query.eq('kit_id', kitId);
       }
 
-      const { data, error } = await query;
+      const { data, error: loadError } = await query.order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (loadError) {
+        throw loadError;
+      }
 
-      const patterns: DrumPattern[] = data.map(pattern => ({
+      const patterns: DrumPattern[] = (data || []).map(pattern => ({
         id: pattern.id,
         name: pattern.name,
-        pattern: pattern.pattern || [],
         bpm: pattern.bpm || 120,
         timeSignature: pattern.time_signature || '4/4',
         loop: pattern.loop !== false,
+        pattern: pattern.pattern || [],
       }));
 
       console.log(`Loaded ${patterns.length} drum patterns from Supabase`);
@@ -186,8 +219,8 @@ export const useDrumKitSupabase = () => {
 
   // Save drum session to Supabase
   const saveDrumSession = useCallback(async (session: DrumSession): Promise<string | null> => {
-    if (!isSupabaseConfigured()) {
-      console.log('Supabase not configured, skipping session save');
+    if (!isSupabaseConfigured) {
+      console.warn('Supabase not configured, skipping session save');
       return null;
     }
 
@@ -195,23 +228,29 @@ export const useDrumKitSupabase = () => {
       setIsLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const sessionData = {
+        user_id: user.id,
+        kit_id: session.kitId,
+        patterns: session.patterns,
+        recording_url: session.recording?.audioUrl || null,
+        recording_duration: session.recording?.duration || 0,
+        recording_waveform: session.recording?.waveform || [],
+      };
+
+      const { data, error: saveError } = await supabase
         .from('drum_sessions')
-        .insert({
-          kit_id: session.kitId,
-          patterns: session.patterns,
-          recording_url: session.recording?.audioUrl,
-          recording_duration: session.recording?.duration || 0,
-          recording_waveform: session.recording?.waveform || [],
-          metadata: {
-            createdAt: session.createdAt,
-            updatedAt: session.updatedAt,
-          },
-        })
-        .select()
+        .upsert(sessionData, { onConflict: 'id' })
+        .select('id')
         .single();
 
-      if (error) throw error;
+      if (saveError) {
+        throw saveError;
+      }
 
       analyticsManager.trackEvent('drum_session_saved', {
         sessionId: data.id,
@@ -233,8 +272,8 @@ export const useDrumKitSupabase = () => {
 
   // Load drum sessions from Supabase
   const loadDrumSessions = useCallback(async (kitId?: string): Promise<DrumSession[]> => {
-    if (!isSupabaseConfigured()) {
-      console.log('Supabase not configured, returning empty sessions');
+    if (!isSupabaseConfigured) {
+      console.warn('Supabase not configured, returning empty sessions');
       return [];
     }
 
@@ -242,26 +281,33 @@ export const useDrumKitSupabase = () => {
       setIsLoading(true);
       setError(null);
 
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       let query = supabase
         .from('drum_sessions')
         .select('*')
-        .order('created_at', { ascending: false });
+        .eq('user_id', user.id);
 
       if (kitId) {
         query = query.eq('kit_id', kitId);
       }
 
-      const { data, error } = await query;
+      const { data, error: loadError } = await query.order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (loadError) {
+        throw loadError;
+      }
 
-      const sessions: DrumSession[] = data.map(session => ({
+      const sessions: DrumSession[] = (data || []).map(session => ({
         id: session.id,
         userId: session.user_id,
         kitId: session.kit_id,
         patterns: session.patterns || [],
         recording: session.recording_url ? {
-          id: `${session.id}_recording`,
+          id: session.id + '_recording',
           sessionId: session.id,
           audioUrl: session.recording_url,
           duration: session.recording_duration || 0,
@@ -285,8 +331,8 @@ export const useDrumKitSupabase = () => {
 
   // Save drum kit settings to Supabase
   const saveDrumKitSettings = useCallback(async (settings: DrumKitSettings): Promise<boolean> => {
-    if (!isSupabaseConfigured()) {
-      console.log('Supabase not configured, skipping settings save');
+    if (!isSupabaseConfigured) {
+      console.warn('Supabase not configured, skipping settings save');
       return false;
     }
 
@@ -294,25 +340,35 @@ export const useDrumKitSupabase = () => {
       setIsLoading(true);
       setError(null);
 
-      const { error } = await supabase
-        .from('drum_kit_settings')
-        .upsert({
-          master_volume: settings.masterVolume,
-          metronome: settings.metronome,
-          metronome_volume: settings.metronomeVolume,
-          recording_enabled: settings.recordingEnabled,
-          touch_sensitivity: settings.touchSensitivity,
-          visual_feedback: settings.visualFeedback,
-          haptic_feedback: settings.hapticFeedback,
-          gesture_control: settings.gestureControl,
-        });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
 
-      if (error) throw error;
+      const settingsData = {
+        user_id: user.id,
+        master_volume: settings.masterVolume,
+        metronome: settings.metronome,
+        metronome_volume: settings.metronomeVolume,
+        recording_enabled: settings.recordingEnabled,
+        touch_sensitivity: settings.touchSensitivity,
+        visual_feedback: settings.visualFeedback,
+        haptic_feedback: settings.hapticFeedback,
+        gesture_control: settings.gestureControl,
+      };
+
+      const { error: saveError } = await supabase
+        .from('drum_kit_settings')
+        .upsert(settingsData, { onConflict: 'user_id' });
+
+      if (saveError) {
+        throw saveError;
+      }
 
       analyticsManager.trackEvent('drum_kit_settings_saved', {
         masterVolume: settings.masterVolume,
-        recordingEnabled: settings.recordingEnabled,
         hapticFeedback: settings.hapticFeedback,
+        gestureControl: settings.gestureControl,
       });
 
       console.log('Drum kit settings saved to Supabase');
@@ -328,8 +384,8 @@ export const useDrumKitSupabase = () => {
 
   // Load drum kit settings from Supabase
   const loadDrumKitSettings = useCallback(async (): Promise<DrumKitSettings | null> => {
-    if (!isSupabaseConfigured()) {
-      console.log('Supabase not configured, returning null settings');
+    if (!isSupabaseConfigured) {
+      console.warn('Supabase not configured, returning null settings');
       return null;
     }
 
@@ -337,28 +393,35 @@ export const useDrumKitSupabase = () => {
       setIsLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const { data, error: loadError } = await supabase
         .from('drum_kit_settings')
         .select('*')
+        .eq('user_id', user.id)
         .single();
 
-      if (error) {
-        if (error.code === 'PGRST116') {
+      if (loadError) {
+        if (loadError.code === 'PGRST116') {
           // No settings found, return null
+          console.log('No drum kit settings found in Supabase');
           return null;
         }
-        throw error;
+        throw loadError;
       }
 
       const settings: DrumKitSettings = {
         masterVolume: data.master_volume || 0.8,
-        metronome: data.metronome || false,
+        metronome: data.metronome !== false,
         metronomeVolume: data.metronome_volume || 0.5,
         recordingEnabled: data.recording_enabled !== false,
         touchSensitivity: data.touch_sensitivity || 0.8,
         visualFeedback: data.visual_feedback !== false,
         hapticFeedback: data.haptic_feedback !== false,
-        gestureControl: data.gesture_control || false,
+        gestureControl: data.gesture_control === true,
       };
 
       console.log('Loaded drum kit settings from Supabase');

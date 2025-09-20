@@ -40,6 +40,7 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
     error,
     loadedSounds,
     totalSounds,
+    loadingProgress,
   } = useDrumKit();
 
   const [activeSound, setActiveSound] = useState<string | null>(null);
@@ -47,7 +48,9 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
 
   useEffect(() => {
     if (error) {
-      Alert.alert('Drum Kit Error', error);
+      Alert.alert('Drum Kit Error', error, [
+        { text: 'OK', onPress: () => console.log('Error acknowledged') }
+      ]);
     }
   }, [error]);
 
@@ -113,11 +116,12 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
       <TouchableOpacity
         style={[styles.controlButton, isRecording && styles.recordingButton]}
         onPress={() => isRecording ? stopRecording() : startRecording()}
+        disabled={!settings.recordingEnabled}
       >
         <Icon 
           name={isRecording ? 'stop-circle' : 'radio-button-on'} 
           size={24} 
-          color={isRecording ? colors.background : colors.error} 
+          color={isRecording ? colors.background : (settings.recordingEnabled ? colors.error : colors.textSecondary)} 
         />
         <Text style={[styles.controlButtonText, isRecording && styles.controlButtonTextActive]}>
           {isRecording ? 'Stop Rec' : 'Record'}
@@ -136,13 +140,13 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
 
   const playDemoPattern = () => {
     const demoPattern = {
-      id: 'demo_35_sounds',
-      name: 'Demo Pattern (35 Sounds)',
+      id: 'demo_loyallawns_35_sounds',
+      name: 'Demo Pattern (Loyal Lawns 35 Sounds)',
       bpm: 120,
       timeSignature: '4/4',
       loop: true,
       pattern: [
-        // Basic rock pattern using various sounds
+        // Basic rock pattern using various sounds from the 35-sound kit
         { soundId: 'kick_1', time: 0, velocity: 1.0 },
         { soundId: 'hihat_closed_1', time: 0.5, velocity: 0.7 },
         { soundId: 'snare_1', time: 1, velocity: 0.9 },
@@ -154,6 +158,12 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
         // Add some toms and cymbals
         { soundId: 'tom_high_1', time: 3.75, velocity: 0.8 },
         { soundId: 'crash_1', time: 4, velocity: 0.9 },
+        // Electronic elements
+        { soundId: 'electronic_kick', time: 4.5, velocity: 0.8 },
+        { soundId: 'electronic_snare', time: 5, velocity: 0.7 },
+        // Percussion
+        { soundId: 'cowbell', time: 5.5, velocity: 0.6 },
+        { soundId: 'shaker', time: 6, velocity: 0.5 },
       ],
     };
     
@@ -169,7 +179,21 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
         
         <View style={styles.settingRow}>
           <Text style={styles.settingLabel}>Master Volume</Text>
-          <Text style={styles.settingValue}>{Math.round(settings.masterVolume * 100)}%</Text>
+          <View style={styles.volumeControls}>
+            <TouchableOpacity
+              style={styles.volumeButton}
+              onPress={() => updateSettings({ masterVolume: Math.max(0, settings.masterVolume - 0.1) })}
+            >
+              <Icon name="remove" size={16} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={styles.settingValue}>{Math.round(settings.masterVolume * 100)}%</Text>
+            <TouchableOpacity
+              style={styles.volumeButton}
+              onPress={() => updateSettings({ masterVolume: Math.min(1, settings.masterVolume + 0.1) })}
+            >
+              <Icon name="add" size={16} color={colors.text} />
+            </TouchableOpacity>
+          </View>
         </View>
         
         <View style={styles.settingRow}>
@@ -207,6 +231,18 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
             </Text>
           </TouchableOpacity>
         </View>
+
+        <View style={styles.settingRow}>
+          <Text style={styles.settingLabel}>Visual Feedback</Text>
+          <TouchableOpacity
+            style={[styles.toggle, settings.visualFeedback && styles.toggleActive]}
+            onPress={() => updateSettings({ visualFeedback: !settings.visualFeedback })}
+          >
+            <Text style={[styles.toggleText, settings.visualFeedback && styles.toggleTextActive]}>
+              {settings.visualFeedback ? 'ON' : 'OFF'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -215,9 +251,15 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
     return (
       <View style={[commonStyles.container, styles.loadingContainer]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Loading 35-Sound Drum Kit...</Text>
+        <Text style={styles.loadingText}>Loading Loyal Lawns Drum Kit...</Text>
         <Text style={styles.loadingSubtext}>
-          {loadedSounds}/{totalSounds} sounds loaded
+          {loadedSounds}/{totalSounds} sounds loaded ({Math.round(loadingProgress)}%)
+        </Text>
+        <View style={styles.progressBar}>
+          <View style={[styles.progressFill, { width: `${loadingProgress}%` }]} />
+        </View>
+        <Text style={styles.loadingNote}>
+          Preparing 35 professional drum sounds for low-latency playback
         </Text>
       </View>
     );
@@ -227,12 +269,16 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
     <View style={commonStyles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <Icon name="close" size={24} color={colors.text} />
-        </TouchableOpacity>
+        {onClose && (
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Icon name="close" size={24} color={colors.text} />
+          </TouchableOpacity>
+        )}
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>{currentKit.name}</Text>
-          <Text style={styles.headerSubtitle}>35 Professional Sounds</Text>
+          <Text style={styles.headerSubtitle}>
+            {currentKit.sounds.length} Professional Sounds • Low Latency
+          </Text>
         </View>
         <View style={styles.headerRight}>
           <Text style={styles.bpmText}>{currentKit.bpm} BPM</Text>
@@ -258,16 +304,19 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
 
         {/* Kit Info */}
         <View style={styles.kitInfo}>
-          <Text style={styles.kitInfoTitle}>Complete Drum Kit</Text>
+          <Text style={styles.kitInfoTitle}>Loyal Lawns Drum Kit</Text>
           <Text style={styles.kitInfoText}>{currentKit.description}</Text>
           <Text style={styles.kitInfoText}>
             ✓ {currentKit.sounds.length} professional drum sounds with original names
           </Text>
           <Text style={styles.kitInfoText}>
+            ✓ Low-latency playback with sound pooling for polyphonic performance
+          </Text>
+          <Text style={styles.kitInfoText}>
             ✓ Recording & Pattern playback • Haptic feedback • Gesture control
           </Text>
           <Text style={styles.kitInfoText}>
-            ✓ No categories - all sounds displayed with their original names
+            ✓ No categories - all sounds displayed with their original names from loyallawnsandlandscaping-alt/Drum-Kit
           </Text>
         </View>
       </ScrollView>
@@ -279,17 +328,40 @@ const styles = StyleSheet.create({
   loadingContainer: {
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   loadingText: {
     fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginTop: 16,
+    textAlign: 'center',
   },
   loadingSubtext: {
     fontSize: 14,
     color: colors.textSecondary,
     marginTop: 8,
+    textAlign: 'center',
+  },
+  loadingNote: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 16,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  progressBar: {
+    width: '80%',
+    height: 4,
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 2,
+    marginTop: 16,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.primary,
+    borderRadius: 2,
   },
   header: {
     flexDirection: 'row',
@@ -311,11 +383,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: colors.text,
+    textAlign: 'center',
   },
   headerSubtitle: {
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 2,
+    textAlign: 'center',
   },
   headerRight: {
     alignItems: 'flex-end',
@@ -424,6 +498,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.primary,
+    marginHorizontal: 16,
+  },
+  volumeControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  volumeButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: colors.grey,
   },
   toggle: {
     paddingHorizontal: 16,

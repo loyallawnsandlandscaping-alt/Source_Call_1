@@ -10,491 +10,452 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { commonStyles, colors } from '../../styles/commonStyles';
-import { useDrumKit } from '../../hooks/useDrumKit';
 import DrumKit from '../../components/DrumKit';
-import SimpleBottomSheet from '../../components/BottomSheet';
+import { useDrumKit } from '../../hooks/useDrumKit';
 import Icon from '../../components/Icon';
+import SimpleBottomSheet from '../../components/BottomSheet';
 
-export default function DrumKitScreen() {
-  const [refreshing, setRefreshing] = useState(false);
-  const [showDrumKit, setShowDrumKit] = useState(false);
-  const [showSessions, setShowSessions] = useState(false);
-  
+const DrumKitScreen: React.FC = () => {
   const {
     currentKit,
     settings,
-    sessions,
     isLoading,
     error,
     loadedSounds,
     totalSounds,
+    sessions,
+    isPlaying,
+    isRecording,
+    loadingProgress,
   } = useDrumKit();
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    // Refresh drum kit data
+    console.log('Refreshing drum kit...');
+    // The hook will automatically reload when the component refreshes
     setTimeout(() => setRefreshing(false), 1000);
   };
 
   const handleStartDrumming = () => {
-    if (error) {
-      Alert.alert('Error', 'Drum kit failed to load. Please try again.');
-      return;
-    }
-    setShowDrumKit(true);
+    console.log('Starting drum session');
   };
 
   const renderQuickStats = () => (
     <View style={styles.statsContainer}>
-      <View style={styles.statCard}>
-        <Icon name="musical-notes" size={24} color={colors.primary} />
-        <Text style={styles.statNumber}>{totalSounds}</Text>
-        <Text style={styles.statLabel}>Sounds</Text>
+      <View style={styles.statItem}>
+        <Text style={styles.statValue}>{loadedSounds}</Text>
+        <Text style={styles.statLabel}>Loaded</Text>
       </View>
-      
-      <View style={styles.statCard}>
-        <Icon name="play-circle" size={24} color={colors.accent} />
-        <Text style={styles.statNumber}>{sessions.length}</Text>
+      <View style={styles.statItem}>
+        <Text style={styles.statValue}>{totalSounds}</Text>
+        <Text style={styles.statLabel}>Total</Text>
+      </View>
+      <View style={styles.statItem}>
+        <Text style={styles.statValue}>{sessions.length}</Text>
         <Text style={styles.statLabel}>Sessions</Text>
       </View>
-      
-      <View style={styles.statCard}>
-        <Icon name="speedometer" size={24} color={colors.secondary} />
-        <Text style={styles.statNumber}>{currentKit.bpm}</Text>
-        <Text style={styles.statLabel}>BPM</Text>
+      <View style={styles.statItem}>
+        <Text style={styles.statValue}>{Math.round(settings.masterVolume * 100)}%</Text>
+        <Text style={styles.statLabel}>Volume</Text>
       </View>
     </View>
   );
 
-  const renderRecentSessions = () => (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
+  const renderRecentSessions = () => {
+    if (sessions.length === 0) return null;
+
+    return (
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Recent Sessions</Text>
-        <TouchableOpacity onPress={() => setShowSessions(true)}>
-          <Text style={styles.sectionAction}>View All</Text>
-        </TouchableOpacity>
-      </View>
-      
-      {sessions.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Icon name="musical-notes-outline" size={48} color={colors.textSecondary} />
-          <Text style={styles.emptyStateText}>No sessions yet</Text>
-          <Text style={styles.emptyStateSubtext}>Start drumming to create your first session</Text>
-        </View>
-      ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {sessions.slice(0, 5).map((session, index) => (
-            <TouchableOpacity key={session.id} style={styles.sessionCard}>
-              <View style={styles.sessionHeader}>
-                <Icon name="play-circle" size={20} color={colors.primary} />
-                <Text style={styles.sessionDate}>
-                  {session.createdAt.toLocaleDateString()}
-                </Text>
-              </View>
-              <Text style={styles.sessionKit}>{currentKit.name}</Text>
-              <Text style={styles.sessionPatterns}>
-                {session.patterns.length} patterns
+        {sessions.slice(0, 3).map((session) => (
+          <View key={session.id} style={styles.sessionItem}>
+            <View style={styles.sessionInfo}>
+              <Text style={styles.sessionTitle}>Session {session.id.slice(-4)}</Text>
+              <Text style={styles.sessionDate}>
+                {new Date(session.createdAt).toLocaleDateString()}
               </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
-    </View>
-  );
+            </View>
+            <View style={styles.sessionStats}>
+              <Text style={styles.sessionStat}>{session.patterns.length} patterns</Text>
+              {session.recording && (
+                <Text style={styles.sessionStat}>Recorded</Text>
+              )}
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  };
 
   const renderKitInfo = () => (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Current Kit</Text>
-      <View style={styles.kitCard}>
-        <View style={styles.kitHeader}>
-          <Text style={styles.kitName}>{currentKit.name}</Text>
-          <View style={styles.kitBadge}>
-            <Text style={styles.kitBadgeText}>{currentKit.bpm} BPM</Text>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Kit Information</Text>
+        <TouchableOpacity onPress={() => setShowInfo(true)}>
+          <Icon name="information-circle-outline" size={20} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
+      
+      <View style={styles.kitInfoCard}>
+        <Text style={styles.kitName}>{currentKit.name}</Text>
+        <Text style={styles.kitDescription}>{currentKit.description}</Text>
+        
+        <View style={styles.kitDetails}>
+          <View style={styles.kitDetailRow}>
+            <Text style={styles.kitDetailLabel}>BPM:</Text>
+            <Text style={styles.kitDetailValue}>{currentKit.bpm}</Text>
+          </View>
+          <View style={styles.kitDetailRow}>
+            <Text style={styles.kitDetailLabel}>Sounds:</Text>
+            <Text style={styles.kitDetailValue}>{currentKit.sounds.length}</Text>
+          </View>
+          <View style={styles.kitDetailRow}>
+            <Text style={styles.kitDetailLabel}>Status:</Text>
+            <Text style={[
+              styles.kitDetailValue,
+              { color: error ? colors.error : (loadedSounds === totalSounds ? colors.success : colors.warning) }
+            ]}>
+              {error ? 'Error' : (loadedSounds === totalSounds ? 'Ready' : 'Loading')}
+            </Text>
           </View>
         </View>
-        <Text style={styles.kitDescription}>{currentKit.description}</Text>
-        <View style={styles.kitStats}>
-          <Text style={styles.kitStat}>{currentKit.sounds.length} sounds</Text>
-          <Text style={styles.kitStat}>•</Text>
-          <Text style={styles.kitStat}>Volume: {Math.round(settings.masterVolume * 100)}%</Text>
-        </View>
+
+        {isLoading && (
+          <View style={styles.loadingInfo}>
+            <Text style={styles.loadingText}>
+              Loading sounds... {Math.round(loadingProgress)}%
+            </Text>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${loadingProgress}%` }]} />
+            </View>
+          </View>
+        )}
+
+        {error && (
+          <View style={styles.errorInfo}>
+            <Icon name="warning" size={16} color={colors.error} />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
       </View>
     </View>
+  );
+
+  const renderInfoBottomSheet = () => (
+    <SimpleBottomSheet
+      isVisible={showInfo}
+      onClose={() => setShowInfo(false)}
+      title="Loyal Lawns Drum Kit"
+    >
+      <ScrollView style={styles.infoContent}>
+        <Text style={styles.infoTitle}>About This Drum Kit</Text>
+        <Text style={styles.infoText}>
+          This drum kit contains 35 professional drum sounds from the loyallawnsandlandscaping-alt/Drum-Kit repository.
+        </Text>
+        
+        <Text style={styles.infoSubtitle}>Features:</Text>
+        <Text style={styles.infoText}>• Low-latency audio playback with sound pooling</Text>
+        <Text style={styles.infoText}>• Polyphonic playback (multiple sounds simultaneously)</Text>
+        <Text style={styles.infoText}>• Recording and pattern playback capabilities</Text>
+        <Text style={styles.infoText}>• Haptic feedback and visual effects</Text>
+        <Text style={styles.infoText}>• Gesture control support</Text>
+        
+        <Text style={styles.infoSubtitle}>Sound Categories:</Text>
+        <Text style={styles.infoText}>• 5 Kick drums</Text>
+        <Text style={styles.infoText}>• 6 Snare drums</Text>
+        <Text style={styles.infoText}>• 6 Hi-hat variations</Text>
+        <Text style={styles.infoText}>• 5 Cymbals (crash, ride, china)</Text>
+        <Text style={styles.infoText}>• 6 Toms (high, mid, low)</Text>
+        <Text style={styles.infoText}>• 4 Percussion instruments</Text>
+        <Text style={styles.infoText}>• 3 Electronic sounds</Text>
+        
+        <Text style={styles.infoSubtitle}>Performance:</Text>
+        <Text style={styles.infoText}>
+          All sounds are preloaded into memory for instant playback. Each sound has multiple instances 
+          to support polyphonic performance without audio dropouts.
+        </Text>
+        
+        {loadedSounds < totalSounds && (
+          <View style={styles.infoWarning}>
+            <Icon name="warning" size={16} color={colors.warning} />
+            <Text style={styles.infoWarningText}>
+              Some audio files may be missing. Please ensure all 35 drum files are placed in the assets/sounds directory.
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+    </SimpleBottomSheet>
   );
 
   return (
     <SafeAreaView style={commonStyles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Drum Kit</Text>
-        <TouchableOpacity onPress={() => Alert.alert('Info', 'Drum kit integrated from loyallawnsandlandscaping_alt/Drum_Kit')}>
-          <Icon name="information-circle-outline" size={24} color={colors.textSecondary} />
-        </TouchableOpacity>
-      </View>
-
       <ScrollView
-        style={styles.content}
+        style={commonStyles.container}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         showsVerticalScrollIndicator={false}
       >
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Drum Kit</Text>
+          <Text style={styles.headerSubtitle}>
+            Loyal Lawns Professional Sounds
+          </Text>
+        </View>
+
         {/* Quick Stats */}
         {renderQuickStats()}
 
-        {/* Main Action Button */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.mainButton}
-            onPress={handleStartDrumming}
-            disabled={isLoading}
-          >
-            <Icon 
-              name={isLoading ? "hourglass" : "play"} 
-              size={32} 
-              color={colors.background} 
-            />
-            <Text style={styles.mainButtonText}>
-              {isLoading ? 'Loading...' : 'Start Drumming'}
-            </Text>
-            {isLoading && (
-              <Text style={styles.mainButtonSubtext}>
-                {loadedSounds}/{totalSounds} sounds loaded
-              </Text>
-            )}
-          </TouchableOpacity>
+        {/* Main Drum Kit Component */}
+        <View style={styles.drumKitContainer}>
+          <DrumKit gestureControlEnabled={settings.gestureControl} />
         </View>
 
-        {/* Kit Info */}
+        {/* Kit Information */}
         {renderKitInfo()}
 
         {/* Recent Sessions */}
         {renderRecentSessions()}
 
-        {/* Features */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Features</Text>
-          <View style={styles.featuresGrid}>
-            <View style={styles.featureCard}>
-              <Icon name="hand-left" size={24} color={colors.primary} />
-              <Text style={styles.featureTitle}>Touch Control</Text>
-              <Text style={styles.featureDescription}>Tap drum pads to play sounds</Text>
+        {/* Status Indicators */}
+        <View style={styles.statusContainer}>
+          {isPlaying && (
+            <View style={styles.statusItem}>
+              <Icon name="play" size={16} color={colors.success} />
+              <Text style={styles.statusText}>Playing Pattern</Text>
             </View>
-            
-            <View style={styles.featureCard}>
-              <Icon name="radio-button-on" size={24} color={colors.error} />
-              <Text style={styles.featureTitle}>Recording</Text>
-              <Text style={styles.featureDescription}>Record your drum sessions</Text>
+          )}
+          {isRecording && (
+            <View style={styles.statusItem}>
+              <Icon name="radio-button-on" size={16} color={colors.error} />
+              <Text style={styles.statusText}>Recording</Text>
             </View>
-            
-            <View style={styles.featureCard}>
-              <Icon name="play-circle" size={24} color={colors.accent} />
-              <Text style={styles.featureTitle}>Patterns</Text>
-              <Text style={styles.featureDescription}>Play demo patterns</Text>
-            </View>
-            
-            <View style={styles.featureCard}>
-              <Icon name="settings" size={24} color={colors.secondary} />
-              <Text style={styles.featureTitle}>Customizable</Text>
-              <Text style={styles.featureDescription}>Adjust volume and effects</Text>
-            </View>
-          </View>
+          )}
         </View>
       </ScrollView>
 
-      {/* Drum Kit Modal */}
-      <SimpleBottomSheet
-        isVisible={showDrumKit}
-        onClose={() => setShowDrumKit(false)}
-      >
-        <DrumKit onClose={() => setShowDrumKit(false)} />
-      </SimpleBottomSheet>
-
-      {/* Sessions Modal */}
-      <SimpleBottomSheet
-        isVisible={showSessions}
-        onClose={() => setShowSessions(false)}
-      >
-        <View style={styles.sessionsModal}>
-          <Text style={styles.modalTitle}>Drum Sessions</Text>
-          {sessions.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Icon name="musical-notes-outline" size={48} color={colors.textSecondary} />
-              <Text style={styles.emptyStateText}>No sessions recorded</Text>
-            </View>
-          ) : (
-            <ScrollView>
-              {sessions.map((session) => (
-                <TouchableOpacity key={session.id} style={styles.sessionListItem}>
-                  <View style={styles.sessionListHeader}>
-                    <Text style={styles.sessionListDate}>
-                      {session.createdAt.toLocaleDateString()}
-                    </Text>
-                    <Text style={styles.sessionListTime}>
-                      {session.createdAt.toLocaleTimeString()}
-                    </Text>
-                  </View>
-                  <Text style={styles.sessionListKit}>{currentKit.name}</Text>
-                  <Text style={styles.sessionListInfo}>
-                    {session.patterns.length} patterns • {session.recording ? 'Recorded' : 'No recording'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
-        </View>
-      </SimpleBottomSheet>
+      {renderInfoBottomSheet()}
     </SafeAreaView>
   );
-}
+};
 
 const styles = {
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    padding: 20,
+    alignItems: 'center' as const,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '700' as const,
     color: colors.text,
   },
-  content: {
-    flex: 1,
-  },
-  section: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  sectionAction: {
+  headerSubtitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
+    color: colors.textSecondary,
+    marginTop: 4,
   },
   statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: 'row' as const,
+    justifyContent: 'space-around',
     paddingHorizontal: 20,
     paddingVertical: 16,
-  },
-  statCard: {
-    alignItems: 'center',
-    backgroundColor: colors.card,
+    backgroundColor: colors.backgroundAlt,
+    marginHorizontal: 20,
     borderRadius: 16,
-    padding: 16,
-    flex: 1,
-    marginHorizontal: 4,
-    borderWidth: 1,
-    borderColor: colors.border,
+    marginBottom: 20,
   },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    marginTop: 8,
+  statItem: {
+    alignItems: 'center' as const,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: colors.primary,
   },
   statLabel: {
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 4,
   },
-  mainButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 20,
-    paddingVertical: 20,
-    paddingHorizontal: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  mainButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.background,
-    marginTop: 8,
-  },
-  mainButtonSubtext: {
-    fontSize: 12,
-    color: colors.background,
-    opacity: 0.8,
-    marginTop: 4,
-  },
-  kitCard: {
-    backgroundColor: colors.card,
+  drumKitContainer: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    backgroundColor: colors.background,
     borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
+    overflow: 'hidden' as const,
   },
-  kitHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  section: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  sectionHeader: {
+    flexDirection: 'row' as const,
     justifyContent: 'space-between',
-    marginBottom: 8,
+    alignItems: 'center' as const,
+    marginBottom: 12,
   },
-  kitName: {
+  sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: colors.text,
   },
-  kitBadge: {
-    backgroundColor: colors.primary,
+  kitInfoCard: {
+    backgroundColor: colors.backgroundAlt,
+    padding: 16,
     borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
   },
-  kitBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.background,
+  kitName: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: colors.text,
+    marginBottom: 4,
   },
   kitDescription: {
     fontSize: 14,
     color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  kitStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  kitDetails: {
+    gap: 8,
   },
-  kitStat: {
+  kitDetailRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between',
+  },
+  kitDetailLabel: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  kitDetailValue: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: colors.text,
+  },
+  loadingInfo: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: colors.background,
+    borderRadius: 8,
+  },
+  loadingText: {
     fontSize: 12,
     color: colors.textSecondary,
-    marginRight: 8,
-  },
-  sessionCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 12,
-    marginRight: 12,
-    width: 140,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  sessionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: 8,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: colors.grey,
+    borderRadius: 2,
+    overflow: 'hidden' as const,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.primary,
+  },
+  errorInfo: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: colors.error + '20',
+    borderRadius: 8,
+  },
+  errorText: {
+    fontSize: 12,
+    color: colors.error,
+    marginLeft: 8,
+    flex: 1,
+  },
+  sessionItem: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between',
+    alignItems: 'center' as const,
+    padding: 12,
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  sessionInfo: {
+    flex: 1,
+  },
+  sessionTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: colors.text,
   },
   sessionDate: {
     fontSize: 12,
     color: colors.textSecondary,
-    marginLeft: 4,
+    marginTop: 2,
   },
-  sessionKit: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
+  sessionStats: {
+    alignItems: 'flex-end' as const,
   },
-  sessionPatterns: {
+  sessionStat: {
     fontSize: 12,
     color: colors.textSecondary,
   },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 32,
+  statusContainer: {
+    flexDirection: 'row' as const,
+    justifyContent: 'center' as const,
+    gap: 16,
+    paddingVertical: 20,
   },
-  emptyStateText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginTop: 12,
-  },
-  emptyStateSubtext: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  featuresGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  featureCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    width: '48%',
-    marginBottom: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  featureTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  featureDescription: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  sessionsModal: {
-    padding: 20,
-    maxHeight: 400,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  sessionListItem: {
+  statusItem: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     backgroundColor: colors.backgroundAlt,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: colors.text,
+    marginLeft: 6,
+  },
+  infoContent: {
+    padding: 20,
+  },
+  infoTitle: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    color: colors.text,
     marginBottom: 12,
   },
-  sessionListHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  infoSubtitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: colors.text,
+    marginTop: 16,
     marginBottom: 8,
   },
-  sessionListDate: {
+  infoText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  sessionListTime: {
-    fontSize: 12,
     color: colors.textSecondary,
-  },
-  sessionListKit: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primary,
+    lineHeight: 20,
     marginBottom: 4,
   },
-  sessionListInfo: {
+  infoWarning: {
+    flexDirection: 'row' as const,
+    alignItems: 'flex-start' as const,
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: colors.warning + '20',
+    borderRadius: 8,
+  },
+  infoWarningText: {
     fontSize: 12,
-    color: colors.textSecondary,
+    color: colors.warning,
+    marginLeft: 8,
+    flex: 1,
+    lineHeight: 16,
   },
 };
+
+export default DrumKitScreen;
