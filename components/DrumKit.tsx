@@ -44,7 +44,6 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
 
   const [activeSound, setActiveSound] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   useEffect(() => {
     if (error) {
@@ -63,55 +62,6 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
     if (settings.hapticFeedback) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
-  };
-
-  const getFilteredSounds = () => {
-    if (selectedCategory === 'all') {
-      return currentKit.sounds;
-    }
-    return currentKit.sounds.filter(sound => sound.category === selectedCategory);
-  };
-
-  const getSoundsByCategory = () => {
-    const categories = ['kick', 'snare', 'hihat', 'cymbal', 'tom', 'percussion', 'electronic'];
-    const soundsByCategory: { [key: string]: DrumSound[] } = {};
-    
-    categories.forEach(category => {
-      soundsByCategory[category] = currentKit.sounds.filter(sound => sound.category === category);
-    });
-    
-    return soundsByCategory;
-  };
-
-  const renderCategoryTabs = () => {
-    const categories = ['all', 'kick', 'snare', 'hihat', 'cymbal', 'tom', 'percussion', 'electronic'];
-    
-    return (
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={styles.categoryTabs}
-        contentContainerStyle={styles.categoryTabsContent}
-      >
-        {categories.map(category => (
-          <TouchableOpacity
-            key={category}
-            style={[
-              styles.categoryTab,
-              selectedCategory === category && styles.categoryTabActive
-            ]}
-            onPress={() => setSelectedCategory(category)}
-          >
-            <Text style={[
-              styles.categoryTabText,
-              selectedCategory === category && styles.categoryTabTextActive
-            ]}>
-              {category.charAt(0).toUpperCase() + category.slice(1)}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    );
   };
 
   const renderDrumPad = (sound: DrumSound, index: number) => {
@@ -136,10 +86,9 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
           colors={isActive ? [colors.primary, colors.secondary] : [sound.color, sound.color + '80']}
           style={[styles.drumPadGradient, { width: padSize, height: padSize }]}
         >
-          <Text style={styles.drumPadText} numberOfLines={1}>
-            {sound.displayName.replace(/\s+/g, '\n')}
+          <Text style={styles.drumPadText} numberOfLines={2}>
+            {sound.displayName}
           </Text>
-          <Text style={styles.drumPadSubtext}>{sound.category.toUpperCase()}</Text>
         </LinearGradient>
       </TouchableOpacity>
     );
@@ -274,8 +223,6 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
     );
   }
 
-  const filteredSounds = getFilteredSounds();
-
   return (
     <View style={commonStyles.container}>
       {/* Header */}
@@ -293,17 +240,13 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Category Tabs */}
-        {renderCategoryTabs()}
-
         {/* Drum Pads Grid */}
         <View style={styles.drumPadsContainer}>
           <Text style={styles.sectionTitle}>
-            {selectedCategory === 'all' ? 'All Sounds' : `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Sounds`}
-            {` (${filteredSounds.length})`}
+            All Sounds ({currentKit.sounds.length})
           </Text>
           <View style={styles.drumPadsGrid}>
-            {filteredSounds.map((sound, index) => renderDrumPad(sound, index))}
+            {currentKit.sounds.map((sound, index) => renderDrumPad(sound, index))}
           </View>
         </View>
 
@@ -318,13 +261,13 @@ const DrumKit: React.FC<DrumKitProps> = ({ onClose, gestureControlEnabled = fals
           <Text style={styles.kitInfoTitle}>Complete Drum Kit</Text>
           <Text style={styles.kitInfoText}>{currentKit.description}</Text>
           <Text style={styles.kitInfoText}>
-            ✓ {currentKit.sounds.length} professional drum sounds
-          </Text>
-          <Text style={styles.kitInfoText}>
-            ✓ 5 Kicks • 6 Snares • 6 Hi-Hats • 5 Cymbals • 6 Toms • 4 Percussion • 3 Electronic
+            ✓ {currentKit.sounds.length} professional drum sounds with original names
           </Text>
           <Text style={styles.kitInfoText}>
             ✓ Recording & Pattern playback • Haptic feedback • Gesture control
+          </Text>
+          <Text style={styles.kitInfoText}>
+            ✓ No categories - all sounds displayed with their original names
           </Text>
         </View>
       </ScrollView>
@@ -385,33 +328,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  categoryTabs: {
-    maxHeight: 50,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  categoryTabsContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  categoryTab: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 12,
-    borderRadius: 20,
-    backgroundColor: colors.backgroundAlt,
-  },
-  categoryTabActive: {
-    backgroundColor: colors.primary,
-  },
-  categoryTabText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  categoryTabTextActive: {
-    color: colors.background,
-  },
   drumPadsContainer: {
     padding: 20,
   },
@@ -443,18 +359,11 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   drumPadText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     color: colors.background,
     textAlign: 'center',
-    lineHeight: 12,
-  },
-  drumPadSubtext: {
-    fontSize: 7,
-    fontWeight: '500',
-    color: colors.background,
-    opacity: 0.8,
-    marginTop: 1,
+    lineHeight: 11,
   },
   controlsContainer: {
     flexDirection: 'row',

@@ -5,7 +5,6 @@ export interface DrumSound {
   displayName: string;
   soundUrl: string;
   color: string;
-  category: 'kick' | 'snare' | 'hihat' | 'cymbal' | 'tom' | 'percussion' | 'electronic' | 'fx';
   volume: number;
   pitch?: number;
   reverb?: number;
@@ -74,11 +73,4 @@ export interface DrumKitSettings {
   visualFeedback: boolean;
   hapticFeedback: boolean;
   gestureControl: boolean;
-}
-
-export interface DrumSoundCategory {
-  id: string;
-  name: string;
-  color: string;
-  sounds: DrumSound[];
 }
