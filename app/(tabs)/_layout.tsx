@@ -54,9 +54,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="ai"
         options={{
-          title: 'AI Tools',
+          title: 'AI Demo',
           tabBarIcon: ({ color, size }) => (
-            <Icon name="brain" size={size} color={color} />
+            <Icon name="alert-triangle" size={size} color={colors.warning} />
           ),
         }}
       />

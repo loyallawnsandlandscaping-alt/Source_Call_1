@@ -30,17 +30,7 @@ const AIScreen = () => {
     detectHands,
     detectPose,
     detectObjects,
-    analyzeText,
-    translateText,
-    analyzeAudio,
-    detectProducts,
-    analyzeMedicalImage,
-    analyzeFinancialData,
-    detectAnomalies,
-    generateRecommendations,
-    createDataVisualization,
     getModelInfo,
-    benchmarkModels,
     clearDetections
   } = useAI();
 
@@ -62,24 +52,20 @@ const AIScreen = () => {
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [analysisResults, setAnalysisResults] = useState<any>(null);
-  const [showModelManager, setShowModelManager] = useState(false);
-  const [showBenchmarks, setShowBenchmarks] = useState(false);
-  const [showSystemStats, setShowSystemStats] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analysis' | 'models' | 'benchmarks' | 'stats'>('analysis');
+  const [activeTab, setActiveTab] = useState<'analysis' | 'models' | 'stats'>('analysis');
 
   useEffect(() => {
-    if (!isInitialized && !aiLoading) {
-      console.log('AI system not initialized, attempting to initialize...');
-    }
-  }, [isInitialized, aiLoading]);
+    console.log('AI Screen loaded - AI functionality is disabled');
+  }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await optimizeOrchestration();
       clearDetections();
       setAnalysisResults(null);
+      console.log('AI screen refreshed - functionality remains disabled');
     } catch (err) {
       console.log('Error refreshing:', err);
     } finally {
@@ -118,110 +104,93 @@ const AIScreen = () => {
       return;
     }
 
-    if (!isInitialized) {
-      Alert.alert('AI Not Ready', 'AI models are still loading. Please wait.');
-      return;
-    }
-
     try {
-      console.log('Starting comprehensive image analysis...');
+      console.log('Starting stubbed image analysis...');
       
-      // Use AI orchestration to route requests to best models
-      const visionModel = routeRequest('image_analysis', { category: 'vision', accuracy: 0.8 });
-      console.log('Selected vision model:', visionModel?.name);
-
       const results = await analyzeFrame(selectedImage);
       
-      // Additional specialized analyses
-      const [products, textAnalysis] = await Promise.all([
-        detectProducts(selectedImage).catch(() => []),
-        analyzeText('Sample text for analysis').catch(() => null)
-      ]);
-
       setAnalysisResults({
         ...results,
-        products,
-        textAnalysis,
         timestamp: new Date(),
-        modelUsed: visionModel?.name || 'Multi-model ensemble'
+        note: 'AI analysis is currently disabled - this is a stub response'
       });
 
-      Alert.alert('Analysis Complete', 'Image analysis completed successfully!');
+      Alert.alert(
+        'Analysis Complete (Stubbed)', 
+        'AI functionality is currently disabled. This is a demonstration of the interface only.',
+        [
+          { text: 'OK' },
+          { 
+            text: 'Learn More', 
+            onPress: () => setShowInfo(true)
+          }
+        ]
+      );
     } catch (err: any) {
-      console.log('Error analyzing image:', err);
-      Alert.alert('Analysis Failed', err.message);
+      console.log('Error in stubbed analysis:', err);
+      Alert.alert('Analysis Failed', 'Stubbed analysis encountered an error.');
     }
   };
 
-  const runFaceDetection = async () => {
-    if (!selectedImage) return;
-    
-    try {
-      const faces = await detectFaces(selectedImage);
-      Alert.alert('Face Detection', `Detected ${faces.length} face(s)`);
-    } catch (err: any) {
-      Alert.alert('Error', err.message);
+  const runStubDetection = async (type: string) => {
+    if (!selectedImage) {
+      Alert.alert('No Image', 'Please select an image first.');
+      return;
     }
-  };
-
-  const runHandDetection = async () => {
-    if (!selectedImage) return;
     
     try {
-      const hands = await detectHands(selectedImage);
-      Alert.alert('Hand Detection', `Detected ${hands.length} hand(s)`);
+      console.log(`Running stubbed ${type} detection...`);
+      
+      let result;
+      switch (type) {
+        case 'face':
+          result = await detectFaces(selectedImage);
+          Alert.alert('Face Detection (Stubbed)', `AI face detection is disabled. Found ${result.length} stub result(s).`);
+          break;
+        case 'hand':
+          result = await detectHands(selectedImage);
+          Alert.alert('Hand Detection (Stubbed)', `AI hand detection is disabled. Found ${result.length} stub result(s).`);
+          break;
+        case 'pose':
+          result = await detectPose(selectedImage);
+          Alert.alert('Pose Detection (Stubbed)', `AI pose detection is disabled. Found stub keypoints: ${result.keypoints.length}.`);
+          break;
+        case 'object':
+          result = await detectObjects(selectedImage);
+          Alert.alert('Object Detection (Stubbed)', `AI object detection is disabled. Found ${result.length} stub result(s).`);
+          break;
+      }
     } catch (err: any) {
-      Alert.alert('Error', err.message);
-    }
-  };
-
-  const runPoseDetection = async () => {
-    if (!selectedImage) return;
-    
-    try {
-      const pose = await detectPose(selectedImage);
-      Alert.alert('Pose Detection', `Detected pose with ${pose.keypoints.length} keypoints`);
-    } catch (err: any) {
-      Alert.alert('Error', err.message);
-    }
-  };
-
-  const runObjectDetection = async () => {
-    if (!selectedImage) return;
-    
-    try {
-      const objects = await detectObjects(selectedImage);
-      Alert.alert('Object Detection', `Detected ${objects.length} object(s)`);
-    } catch (err: any) {
-      Alert.alert('Error', err.message);
+      Alert.alert('Error', `Stubbed ${type} detection failed: ${err.message}`);
     }
   };
 
   const handleModelToggle = (modelId: string) => {
-    console.log(`Toggling model: ${modelId}`);
-    // In a real implementation, this would activate/deactivate the model
-    Alert.alert('Model Toggle', `Model ${modelId} toggled`);
+    console.log(`Model toggle stubbed: ${modelId}`);
+    Alert.alert('Feature Disabled', 'AI model management is currently disabled.');
   };
 
   const handleModelBenchmark = async (modelId: string) => {
     try {
+      console.log(`Benchmarking stubbed for model: ${modelId}`);
       await benchmarkModel(modelId);
-      Alert.alert('Benchmark Complete', `Model ${modelId} benchmarked successfully`);
+      Alert.alert('Benchmark Complete (Stubbed)', `Model ${modelId} benchmark completed with stub results.`);
     } catch (err: any) {
-      Alert.alert('Benchmark Failed', err.message);
+      Alert.alert('Benchmark Failed', 'Stubbed benchmark encountered an error.');
     }
   };
 
   const handleModelUpdate = async (modelId: string) => {
     try {
+      console.log(`Update stubbed for model: ${modelId}`);
       const success = await updateModel(modelId);
       if (success) {
-        Alert.alert('Update Complete', `Model ${modelId} updated successfully`);
+        Alert.alert('Update Complete (Stubbed)', `Model ${modelId} update completed (stubbed).`);
       } else {
-        Alert.alert('Update Failed', `Failed to update model ${modelId}`);
+        Alert.alert('Update Failed', `Failed to update model ${modelId} (stubbed).`);
       }
     } catch (err: any) {
-      Alert.alert('Update Error', err.message);
+      Alert.alert('Update Error', `Stubbed update error: ${err.message}`);
     }
   };
 
@@ -233,33 +202,31 @@ const AIScreen = () => {
       {/* AI System Status */}
       <View style={commonStyles.section}>
         <Text style={commonStyles.sectionTitle}>AI System Status</Text>
-        <View style={commonStyles.card}>
+        <View style={[commonStyles.card, { backgroundColor: colors.warningLight }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-            <Icon 
-              name={isInitialized ? 'check-circle' : 'clock'} 
-              size={20} 
-              color={isInitialized ? colors.success : colors.warning} 
-            />
-            <Text style={[commonStyles.text, { marginLeft: 8 }]}>
-              {isInitialized ? 'AI System Ready' : 'Initializing AI Models...'}
+            <Icon name="alert-triangle" size={20} color={colors.warning} />
+            <Text style={[commonStyles.text, { marginLeft: 8, fontWeight: '600' }]}>
+              AI Features Disabled
             </Text>
           </View>
           
-          {orchestrationConfig && (
-            <Text style={commonStyles.textSecondary}>
-              Primary Model: {availableModels.find(m => m.id === orchestrationConfig.primaryModel)?.name || 'Unknown'}
-            </Text>
-          )}
-          
           <Text style={commonStyles.textSecondary}>
-            Active Models: {Object.keys(activeModels).length} / {availableModels.length}
+            All AI functionality has been replaced with stub responses for demonstration purposes.
           </Text>
+          
+          <TouchableOpacity 
+            style={[buttonStyles.secondary, { marginTop: 12 }]}
+            onPress={() => setShowInfo(true)}
+          >
+            <Icon name="info" size={16} color={colors.primary} />
+            <Text style={buttonStyles.secondaryText}>Learn More</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Image Analysis */}
+      {/* Image Analysis Demo */}
       <View style={commonStyles.section}>
-        <Text style={commonStyles.sectionTitle}>Image Analysis</Text>
+        <Text style={commonStyles.sectionTitle}>Image Analysis Demo</Text>
         
         <TouchableOpacity style={buttonStyles.primary} onPress={pickImage}>
           <Icon name="image" size={20} color="white" />
@@ -281,14 +248,14 @@ const AIScreen = () => {
                 ) : (
                   <>
                     <Icon name="zap" size={16} color={colors.primary} />
-                    <Text style={buttonStyles.secondaryText}>Full Analysis</Text>
+                    <Text style={buttonStyles.secondaryText}>Analyze (Demo)</Text>
                   </>
                 )}
               </TouchableOpacity>
 
               <TouchableOpacity 
                 style={[buttonStyles.secondary, { flex: 1, minWidth: '45%' }]} 
-                onPress={runFaceDetection}
+                onPress={() => runStubDetection('face')}
               >
                 <Icon name="user" size={16} color={colors.primary} />
                 <Text style={buttonStyles.secondaryText}>Faces</Text>
@@ -296,7 +263,7 @@ const AIScreen = () => {
 
               <TouchableOpacity 
                 style={[buttonStyles.secondary, { flex: 1, minWidth: '45%' }]} 
-                onPress={runHandDetection}
+                onPress={() => runStubDetection('hand')}
               >
                 <Icon name="hand" size={16} color={colors.primary} />
                 <Text style={buttonStyles.secondaryText}>Hands</Text>
@@ -304,7 +271,7 @@ const AIScreen = () => {
 
               <TouchableOpacity 
                 style={[buttonStyles.secondary, { flex: 1, minWidth: '45%' }]} 
-                onPress={runPoseDetection}
+                onPress={() => runStubDetection('pose')}
               >
                 <Icon name="activity" size={16} color={colors.primary} />
                 <Text style={buttonStyles.secondaryText}>Pose</Text>
@@ -312,7 +279,7 @@ const AIScreen = () => {
 
               <TouchableOpacity 
                 style={[buttonStyles.secondary, { flex: 1, minWidth: '45%' }]} 
-                onPress={runObjectDetection}
+                onPress={() => runStubDetection('object')}
               >
                 <Icon name="eye" size={16} color={colors.primary} />
                 <Text style={buttonStyles.secondaryText}>Objects</Text>
@@ -324,8 +291,14 @@ const AIScreen = () => {
         {/* Analysis Results */}
         {analysisResults && (
           <View style={commonStyles.card}>
-            <Text style={commonStyles.cardTitle}>Analysis Results</Text>
+            <Text style={commonStyles.cardTitle}>Demo Analysis Results</Text>
             
+            <View style={[{ padding: 12, backgroundColor: colors.warningLight, borderRadius: 8, marginBottom: 12 }]}>
+              <Text style={[commonStyles.textSecondary, { fontStyle: 'italic' }]}>
+                ⚠️ This is a stub response - AI functionality is disabled
+              </Text>
+            </View>
+
             <View style={{ marginBottom: 12 }}>
               <Text style={commonStyles.textSecondary}>
                 Model: {analysisResults.modelUsed}
@@ -340,7 +313,7 @@ const AIScreen = () => {
 
             {analysisResults.detectedObjects && analysisResults.detectedObjects.length > 0 && (
               <View style={{ marginBottom: 12 }}>
-                <Text style={commonStyles.text}>Objects Detected:</Text>
+                <Text style={commonStyles.text}>Detected Objects (Demo):</Text>
                 {analysisResults.detectedObjects.map((obj: any, index: number) => (
                   <Text key={index} style={commonStyles.textSecondary}>
                     • {obj.label} ({(obj.confidence * 100).toFixed(1)}%)
@@ -349,50 +322,12 @@ const AIScreen = () => {
               </View>
             )}
 
-            {analysisResults.faceData && (
+            {analysisResults.explainability && (
               <View style={{ marginBottom: 12 }}>
-                <Text style={commonStyles.text}>Face Analysis:</Text>
+                <Text style={commonStyles.text}>Explanation:</Text>
                 <Text style={commonStyles.textSecondary}>
-                  Landmarks: {analysisResults.faceData.landmarks?.length || 0}
+                  {analysisResults.explainability.reasoning}
                 </Text>
-                {analysisResults.faceData.emotions && (
-                  <Text style={commonStyles.textSecondary}>
-                    Primary Emotion: {analysisResults.faceData.emotions[0]?.emotion} 
-                    ({(analysisResults.faceData.emotions[0]?.confidence * 100).toFixed(1)}%)
-                  </Text>
-                )}
-              </View>
-            )}
-
-            {analysisResults.handData && (
-              <View style={{ marginBottom: 12 }}>
-                <Text style={commonStyles.text}>Hand Analysis:</Text>
-                <Text style={commonStyles.textSecondary}>
-                  Handedness: {analysisResults.handData.handedness}
-                </Text>
-                <Text style={commonStyles.textSecondary}>
-                  Landmarks: {analysisResults.handData.landmarks?.length || 0}
-                </Text>
-                {analysisResults.handData.gestures && analysisResults.handData.gestures.length > 0 && (
-                  <Text style={commonStyles.textSecondary}>
-                    Gesture: {analysisResults.handData.gestures[0].type} 
-                    ({(analysisResults.handData.gestures[0].confidence * 100).toFixed(1)}%)
-                  </Text>
-                )}
-              </View>
-            )}
-
-            {analysisResults.products && analysisResults.products.length > 0 && (
-              <View style={{ marginBottom: 12 }}>
-                <Text style={commonStyles.text}>Products Detected:</Text>
-                {analysisResults.products.map((product: any, index: number) => (
-                  <View key={index} style={{ marginLeft: 12, marginBottom: 4 }}>
-                    <Text style={commonStyles.textSecondary}>• {product.name}</Text>
-                    {product.price && (
-                      <Text style={commonStyles.textSecondary}>  Price: ${product.price}</Text>
-                    )}
-                  </View>
-                ))}
               </View>
             )}
           </View>
@@ -403,7 +338,7 @@ const AIScreen = () => {
       {detections.length > 0 && (
         <View style={commonStyles.section}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={commonStyles.sectionTitle}>Recent Detections</Text>
+            <Text style={commonStyles.sectionTitle}>Recent Demo Results</Text>
             <TouchableOpacity onPress={clearDetections}>
               <Text style={[commonStyles.textSecondary, { fontSize: 14 }]}>Clear</Text>
             </TouchableOpacity>
@@ -418,19 +353,11 @@ const AIScreen = () => {
               <Text style={commonStyles.textSecondary}>
                 Objects: {detection.detectedObjects?.length || 0}
               </Text>
+              <Text style={[commonStyles.textSecondary, { fontSize: 12, fontStyle: 'italic' }]}>
+                (Stub response)
+              </Text>
             </View>
           ))}
-        </View>
-      )}
-
-      {/* Error Display */}
-      {(aiError || orchestrationError) && (
-        <View style={commonStyles.section}>
-          <View style={[commonStyles.card, { backgroundColor: colors.errorLight }]}>
-            <Text style={[commonStyles.text, { color: colors.error }]}>
-              {aiError || orchestrationError}
-            </Text>
-          </View>
         </View>
       )}
     </ScrollView>
@@ -440,7 +367,7 @@ const AIScreen = () => {
     <ScrollView style={commonStyles.container}>
       <View style={commonStyles.section}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={commonStyles.sectionTitle}>AI Models</Text>
+          <Text style={commonStyles.sectionTitle}>AI Models (Demo)</Text>
           <TouchableOpacity 
             style={buttonStyles.secondary}
             onPress={optimizeOrchestration}
@@ -457,6 +384,15 @@ const AIScreen = () => {
           </TouchableOpacity>
         </View>
 
+        <View style={[commonStyles.card, { backgroundColor: colors.warningLight, marginBottom: 16 }]}>
+          <Text style={[commonStyles.text, { color: colors.warning, fontWeight: '600' }]}>
+            AI Models Disabled
+          </Text>
+          <Text style={commonStyles.textSecondary}>
+            All AI models have been replaced with stub implementations. No actual AI processing occurs.
+          </Text>
+        </View>
+
         {availableModels.map((model) => {
           const performance = getModelPerformance(model.id);
           const hasUpdate = updateInfo.some(u => u.modelId === model.id);
@@ -467,7 +403,7 @@ const AIScreen = () => {
               key={model.id}
               model={model}
               benchmark={benchmark}
-              isActive={!!activeModels[model.id]}
+              isActive={false} // No models are actually active
               onToggle={handleModelToggle}
               onBenchmark={handleModelBenchmark}
               onUpdate={hasUpdate ? handleModelUpdate : undefined}
@@ -479,79 +415,32 @@ const AIScreen = () => {
     </ScrollView>
   );
 
-  const renderBenchmarksTab = () => (
-    <ScrollView style={commonStyles.container}>
-      <View style={commonStyles.section}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={commonStyles.sectionTitle}>Model Benchmarks</Text>
-          <TouchableOpacity 
-            style={buttonStyles.secondary}
-            onPress={benchmarkModels}
-          >
-            <Icon name="activity" size={16} color={colors.primary} />
-            <Text style={buttonStyles.secondaryText}>Run All</Text>
-          </TouchableOpacity>
-        </View>
-
-        {benchmarks.length === 0 ? (
-          <View style={commonStyles.card}>
-            <Text style={commonStyles.textSecondary}>No benchmarks available. Run benchmarks to see performance data.</Text>
-          </View>
-        ) : (
-          benchmarks.map((benchmark, index) => {
-            const model = availableModels.find(m => m.id === benchmark.modelId);
-            return (
-              <View key={index} style={commonStyles.card}>
-                <Text style={commonStyles.cardTitle}>{model?.name || benchmark.modelId}</Text>
-                
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <Text style={commonStyles.textSecondary}>Accuracy</Text>
-                  <Text style={commonStyles.text}>{(benchmark.accuracy * 100).toFixed(1)}%</Text>
-                </View>
-                
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <Text style={commonStyles.textSecondary}>Latency</Text>
-                  <Text style={commonStyles.text}>{benchmark.latency.toFixed(1)}ms</Text>
-                </View>
-                
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <Text style={commonStyles.textSecondary}>Throughput</Text>
-                  <Text style={commonStyles.text}>{benchmark.throughput.toFixed(1)} ops/sec</Text>
-                </View>
-                
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <Text style={commonStyles.textSecondary}>Memory Usage</Text>
-                  <Text style={commonStyles.text}>{benchmark.memoryUsage.toFixed(0)} MB</Text>
-                </View>
-                
-                <Text style={[commonStyles.textSecondary, { fontSize: 12 }]}>
-                  {benchmark.timestamp.toLocaleString()}
-                </Text>
-              </View>
-            );
-          })
-        )}
-      </View>
-    </ScrollView>
-  );
-
   const renderStatsTab = () => {
     const stats = getSystemStats();
     
     return (
       <ScrollView style={commonStyles.container}>
         <View style={commonStyles.section}>
-          <Text style={commonStyles.sectionTitle}>System Statistics</Text>
+          <Text style={commonStyles.sectionTitle}>System Statistics (Demo)</Text>
+          
+          <View style={[commonStyles.card, { backgroundColor: colors.warningLight, marginBottom: 16 }]}>
+            <Text style={[commonStyles.text, { color: colors.warning, fontWeight: '600' }]}>
+              Statistics Disabled
+            </Text>
+            <Text style={commonStyles.textSecondary}>
+              All statistics are stub values. No actual AI processing or metrics are collected.
+            </Text>
+          </View>
           
           <View style={commonStyles.card}>
             <Text style={commonStyles.cardTitle}>Overview</Text>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
               <Text style={commonStyles.textSecondary}>Total Models</Text>
-              <Text style={commonStyles.text}>{stats.totalModels}</Text>
+              <Text style={commonStyles.text}>{stats.totalModels} (stub)</Text>
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
               <Text style={commonStyles.textSecondary}>Active Models</Text>
-              <Text style={commonStyles.text}>{stats.activeCount}</Text>
+              <Text style={commonStyles.text}>{stats.activeCount} (disabled)</Text>
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
               <Text style={commonStyles.textSecondary}>Platform</Text>
@@ -559,11 +448,11 @@ const AIScreen = () => {
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
               <Text style={commonStyles.textSecondary}>Avg Accuracy</Text>
-              <Text style={commonStyles.text}>{stats.avgAccuracy}</Text>
+              <Text style={commonStyles.text}>{stats.avgAccuracy} (stub)</Text>
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <Text style={commonStyles.textSecondary}>Avg Latency</Text>
-              <Text style={commonStyles.text}>{stats.avgLatency}</Text>
+              <Text style={commonStyles.text}>{stats.avgLatency} (stub)</Text>
             </View>
           </View>
 
@@ -572,25 +461,9 @@ const AIScreen = () => {
             {Object.entries(stats.categoryCounts).map(([category, count]) => (
               <View key={category} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
                 <Text style={commonStyles.textSecondary}>{category.charAt(0).toUpperCase() + category.slice(1)}</Text>
-                <Text style={commonStyles.text}>{count}</Text>
+                <Text style={commonStyles.text}>{count} (stub)</Text>
               </View>
             ))}
-          </View>
-
-          <View style={commonStyles.card}>
-            <Text style={commonStyles.cardTitle}>Performance Data</Text>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-              <Text style={commonStyles.textSecondary}>Benchmarks</Text>
-              <Text style={commonStyles.text}>{stats.benchmarkCount}</Text>
-            </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-              <Text style={commonStyles.textSecondary}>Updates Available</Text>
-              <Text style={commonStyles.text}>{stats.updateCount}</Text>
-            </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={commonStyles.textSecondary}>Cache Size</Text>
-              <Text style={commonStyles.text}>{stats.cacheSize}</Text>
-            </View>
           </View>
         </View>
       </ScrollView>
@@ -601,15 +474,10 @@ const AIScreen = () => {
     <SafeAreaView style={commonStyles.safeArea}>
       {/* Header */}
       <View style={commonStyles.header}>
-        <Text style={commonStyles.headerTitle}>AI Laboratory</Text>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TouchableOpacity onPress={() => setShowSystemStats(true)}>
-            <Icon name="bar-chart-2" size={24} color={colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowModelManager(true)}>
-            <Icon name="settings" size={24} color={colors.text} />
-          </TouchableOpacity>
-        </View>
+        <Text style={commonStyles.headerTitle}>AI Demo (Disabled)</Text>
+        <TouchableOpacity onPress={() => setShowInfo(true)}>
+          <Icon name="info" size={24} color={colors.text} />
+        </TouchableOpacity>
       </View>
 
       {/* Tab Navigation */}
@@ -617,7 +485,6 @@ const AIScreen = () => {
         {[
           { key: 'analysis', label: 'Analysis', icon: 'zap' },
           { key: 'models', label: 'Models', icon: 'cpu' },
-          { key: 'benchmarks', label: 'Benchmarks', icon: 'activity' },
           { key: 'stats', label: 'Stats', icon: 'bar-chart-2' }
         ].map((tab) => (
           <TouchableOpacity
@@ -653,53 +520,45 @@ const AIScreen = () => {
       {/* Tab Content */}
       {activeTab === 'analysis' && renderAnalysisTab()}
       {activeTab === 'models' && renderModelsTab()}
-      {activeTab === 'benchmarks' && renderBenchmarksTab()}
       {activeTab === 'stats' && renderStatsTab()}
 
-      {/* Model Manager Bottom Sheet */}
+      {/* Info Bottom Sheet */}
       <SimpleBottomSheet
-        isVisible={showModelManager}
-        onClose={() => setShowModelManager(false)}
+        isVisible={showInfo}
+        onClose={() => setShowInfo(false)}
       >
         <View style={{ padding: 20 }}>
-          <Text style={commonStyles.cardTitle}>AI Model Manager</Text>
-          <Text style={commonStyles.textSecondary}>
-            Manage your AI models, check for updates, and optimize performance.
+          <Text style={commonStyles.cardTitle}>AI Features Disabled</Text>
+          <Text style={[commonStyles.textSecondary, { marginBottom: 16 }]}>
+            All AI functionality has been removed and replaced with stub implementations for the following reasons:
           </Text>
           
-          <TouchableOpacity 
-            style={[buttonStyles.primary, { marginTop: 16 }]}
-            onPress={() => {
-              setShowModelManager(false);
-              setActiveTab('models');
-            }}
-          >
-            <Icon name="cpu" size={20} color="white" />
-            <Text style={buttonStyles.primaryText}>View Models</Text>
-          </TouchableOpacity>
-        </View>
-      </SimpleBottomSheet>
+          <View style={{ marginBottom: 16 }}>
+            <Text style={[commonStyles.text, { fontWeight: '600', marginBottom: 8 }]}>Performance Issues:</Text>
+            <Text style={commonStyles.textSecondary}>• Large bundle size (100MB+ for AI models)</Text>
+            <Text style={commonStyles.textSecondary}>• Slow app startup and high memory usage</Text>
+            <Text style={commonStyles.textSecondary}>• Battery drain from real-time processing</Text>
+          </View>
 
-      {/* System Stats Bottom Sheet */}
-      <SimpleBottomSheet
-        isVisible={showSystemStats}
-        onClose={() => setShowSystemStats(false)}
-      >
-        <View style={{ padding: 20 }}>
-          <Text style={commonStyles.cardTitle}>System Statistics</Text>
-          <Text style={commonStyles.textSecondary}>
-            View detailed performance metrics and system information.
-          </Text>
+          <View style={{ marginBottom: 16 }}>
+            <Text style={[commonStyles.text, { fontWeight: '600', marginBottom: 8 }]}>User Experience:</Text>
+            <Text style={commonStyles.textSecondary}>• Complex interface with too many options</Text>
+            <Text style={commonStyles.textSecondary}>• Long loading times without proper feedback</Text>
+            <Text style={commonStyles.textSecondary}>• No offline functionality</Text>
+          </View>
+
+          <View style={{ marginBottom: 16 }}>
+            <Text style={[commonStyles.text, { fontWeight: '600', marginBottom: 8 }]}>Technical Concerns:</Text>
+            <Text style={commonStyles.textSecondary}>• Platform compatibility issues</Text>
+            <Text style={commonStyles.textSecondary}>• Memory leaks and UI blocking</Text>
+            <Text style={commonStyles.textSecondary}>• Privacy and data collection concerns</Text>
+          </View>
           
           <TouchableOpacity 
             style={[buttonStyles.primary, { marginTop: 16 }]}
-            onPress={() => {
-              setShowSystemStats(false);
-              setActiveTab('stats');
-            }}
+            onPress={() => setShowInfo(false)}
           >
-            <Icon name="bar-chart-2" size={20} color="white" />
-            <Text style={buttonStyles.primaryText}>View Stats</Text>
+            <Text style={buttonStyles.primaryText}>Got It</Text>
           </TouchableOpacity>
         </View>
       </SimpleBottomSheet>

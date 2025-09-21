@@ -18,28 +18,30 @@ const AIInsightsCard: React.FC<AIInsightsCardProps> = ({
   value,
   change,
   icon,
-  color = colors.primary,
+  color = colors.textSecondary, // Dimmed color for disabled state
   onPress
 }) => {
   const formatChange = (change: number) => {
-    const sign = change >= 0 ? '+' : '';
-    return `${sign}${change.toFixed(1)}%`;
+    return 'N/A'; // No real data
   };
 
   const getChangeColor = (change: number) => {
-    if (change > 0) return colors.success;
-    if (change < 0) return colors.error;
-    return colors.textSecondary;
+    return colors.textSecondary; // Neutral color for disabled state
   };
 
   return (
     <TouchableOpacity
-      style={[styles.container, onPress && styles.pressable]}
+      style={[styles.container, styles.disabledContainer]}
       onPress={onPress}
-      disabled={!onPress}
+      disabled={true} // Always disabled
     >
+      {/* Disabled Banner */}
+      <View style={styles.disabledBanner}>
+        <Text style={styles.disabledText}>DISABLED</Text>
+      </View>
+
       <View style={styles.header}>
-        <View style={[styles.iconContainer, { backgroundColor: color }]}>
+        <View style={[styles.iconContainer, { backgroundColor: color, opacity: 0.5 }]}>
           <Icon name={icon} size={20} color="white" />
         </View>
         {change !== undefined && (
@@ -50,8 +52,16 @@ const AIInsightsCard: React.FC<AIInsightsCardProps> = ({
       </View>
       
       <View style={styles.content}>
-        <Text style={styles.value}>{value}</Text>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={[styles.value, { color: colors.textSecondary }]}>
+          {typeof value === 'string' ? 'N/A' : '0'}
+        </Text>
+        <Text style={styles.title}>{title} (Disabled)</Text>
+      </View>
+
+      <View style={styles.disabledMessage}>
+        <Text style={styles.disabledMessageText}>
+          AI insights are currently disabled
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -64,10 +74,26 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: colors.border,
-    minHeight: 100,
+    minHeight: 120,
+    position: 'relative',
   },
-  pressable: {
-    transform: [{ scale: 1 }],
+  disabledContainer: {
+    opacity: 0.6,
+  },
+  disabledBanner: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: colors.error,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    zIndex: 1,
+  },
+  disabledText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: '600',
   },
   header: {
     flexDirection: 'row',
@@ -94,7 +120,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
   value: {
     fontSize: 24,
@@ -106,6 +132,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     fontWeight: '500',
+  },
+  disabledMessage: {
+    marginTop: 8,
+    padding: 6,
+    backgroundColor: colors.warningLight,
+    borderRadius: 4,
+  },
+  disabledMessageText: {
+    fontSize: 10,
+    color: colors.warning,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });
 

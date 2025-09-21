@@ -47,6 +47,7 @@ const AIModelCard: React.FC<AIModelCardProps> = ({
   };
 
   const formatSize = (sizeInMB: number) => {
+    if (sizeInMB === 0) return 'N/A';
     if (sizeInMB < 1) return `${(sizeInMB * 1024).toFixed(0)} KB`;
     if (sizeInMB < 1024) return `${sizeInMB.toFixed(1)} MB`;
     return `${(sizeInMB / 1024).toFixed(1)} GB`;
@@ -58,7 +59,13 @@ const AIModelCard: React.FC<AIModelCardProps> = ({
   };
 
   return (
-    <View style={[styles.container, isActive && styles.activeContainer]}>
+    <View style={[styles.container, { opacity: 0.6 }]}> {/* Dimmed to show disabled state */}
+      {/* Disabled Banner */}
+      <View style={styles.disabledBanner}>
+        <Icon name="alert-triangle" size={12} color="white" />
+        <Text style={styles.disabledText}>DISABLED</Text>
+      </View>
+
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.titleRow}>
@@ -67,24 +74,20 @@ const AIModelCard: React.FC<AIModelCardProps> = ({
           </View>
           <View style={styles.titleContainer}>
             <Text style={styles.modelName} numberOfLines={1}>{model.name}</Text>
-            <Text style={styles.modelVersion}>v{model.version}</Text>
+            <Text style={styles.modelVersion}>v{model.version} (Stub)</Text>
           </View>
           {hasUpdate && (
-            <View style={styles.updateBadge}>
+            <View style={[styles.updateBadge, { opacity: 0.5 }]}>
               <Icon name="download" size={12} color="white" />
             </View>
           )}
         </View>
         
         <TouchableOpacity
-          style={[styles.toggleButton, isActive && styles.activeToggle]}
+          style={[styles.toggleButton, styles.disabledToggle]}
           onPress={() => onToggle(model.id)}
         >
-          <Icon 
-            name={isActive ? 'check' : 'plus'} 
-            size={16} 
-            color={isActive ? 'white' : colors.text} 
-          />
+          <Icon name="x" size={16} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -92,80 +95,54 @@ const AIModelCard: React.FC<AIModelCardProps> = ({
       <View style={styles.statsContainer}>
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Accuracy</Text>
-          <Text style={styles.statValue}>{(model.accuracy * 100).toFixed(1)}%</Text>
+          <Text style={[styles.statValue, { color: colors.textSecondary }]}>
+            {model.accuracy === 0.5 ? 'N/A' : (model.accuracy * 100).toFixed(1) + '%'}
+          </Text>
         </View>
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Latency</Text>
-          <Text style={styles.statValue}>{model.latency}ms</Text>
+          <Text style={[styles.statValue, { color: colors.textSecondary }]}>
+            {model.latency === 100 ? 'N/A' : model.latency + 'ms'}
+          </Text>
         </View>
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Size</Text>
-          <Text style={styles.statValue}>{formatSize(model.size)}</Text>
+          <Text style={[styles.statValue, { color: colors.textSecondary }]}>
+            {formatSize(model.size)}
+          </Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={styles.statLabel}>Score</Text>
-          <Text style={[styles.statValue, styles.scoreValue]}>
-            {(getPerformanceScore() * 100).toFixed(0)}
+          <Text style={styles.statLabel}>Status</Text>
+          <Text style={[styles.statValue, { color: colors.error }]}>
+            OFF
           </Text>
         </View>
       </View>
 
-      {/* Requirements */}
-      <View style={styles.requirementsContainer}>
-        <Text style={styles.requirementsTitle}>Requirements</Text>
-        <View style={styles.requirementsList}>
-          <View style={styles.requirement}>
-            <Icon name="cpu" size={12} color={colors.textSecondary} />
-            <Text style={styles.requirementText}>{model.requirements.minRAM} MB RAM</Text>
-          </View>
-          <View style={styles.requirement}>
-            <Icon name="hard-drive" size={12} color={colors.textSecondary} />
-            <Text style={styles.requirementText}>{model.requirements.minStorage} MB</Text>
-          </View>
-          {model.requirements.gpu && (
-            <View style={styles.requirement}>
-              <Icon name="zap" size={12} color={colors.textSecondary} />
-              <Text style={styles.requirementText}>GPU Required</Text>
-            </View>
-          )}
-        </View>
+      {/* Disabled Message */}
+      <View style={styles.disabledMessage}>
+        <Text style={styles.disabledMessageText}>
+          AI model functionality has been disabled to improve app performance and user experience.
+        </Text>
       </View>
-
-      {/* Benchmark Info */}
-      {benchmark && (
-        <View style={styles.benchmarkContainer}>
-          <Text style={styles.benchmarkTitle}>Latest Benchmark</Text>
-          <View style={styles.benchmarkStats}>
-            <Text style={styles.benchmarkStat}>
-              Throughput: {benchmark.throughput.toFixed(1)} ops/sec
-            </Text>
-            <Text style={styles.benchmarkStat}>
-              Memory: {benchmark.memoryUsage.toFixed(0)} MB
-            </Text>
-            <Text style={styles.benchmarkStat}>
-              Energy: {benchmark.energyConsumption.toFixed(1)} mW
-            </Text>
-          </View>
-        </View>
-      )}
 
       {/* Actions */}
       <View style={styles.actionsContainer}>
         <TouchableOpacity
-          style={styles.actionButton}
+          style={[styles.actionButton, { opacity: 0.5 }]}
           onPress={() => onBenchmark(model.id)}
         >
-          <Icon name="activity" size={16} color={colors.primary} />
-          <Text style={styles.actionText}>Benchmark</Text>
+          <Icon name="activity" size={16} color={colors.textSecondary} />
+          <Text style={[styles.actionText, { color: colors.textSecondary }]}>Benchmark (Demo)</Text>
         </TouchableOpacity>
         
         {hasUpdate && onUpdate && (
           <TouchableOpacity
-            style={[styles.actionButton, styles.updateButton]}
+            style={[styles.actionButton, styles.updateButton, { opacity: 0.5 }]}
             onPress={() => onUpdate(model.id)}
           >
-            <Icon name="download" size={16} color="white" />
-            <Text style={[styles.actionText, styles.updateText]}>Update</Text>
+            <Icon name="download" size={16} color={colors.textSecondary} />
+            <Text style={[styles.actionText, { color: colors.textSecondary }]}>Update (Demo)</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -181,10 +158,25 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: colors.border,
+    position: 'relative',
   },
-  activeContainer: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryLight,
+  disabledBanner: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: colors.error,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  disabledText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: '600',
+    marginLeft: 2,
   },
   header: {
     flexDirection: 'row',
@@ -211,7 +203,7 @@ const styles = StyleSheet.create({
   modelName: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textSecondary, // Dimmed
     marginBottom: 2,
   },
   modelVersion: {
@@ -237,9 +229,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  activeToggle: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+  disabledToggle: {
+    backgroundColor: colors.errorLight,
+    borderColor: colors.error,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -263,55 +255,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
   },
-  scoreValue: {
-    color: colors.primary,
-  },
-  requirementsContainer: {
-    marginBottom: 12,
-  },
-  requirementsTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 6,
-  },
-  requirementsList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  requirement: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  requirementText: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    marginLeft: 4,
-  },
-  benchmarkContainer: {
-    marginBottom: 12,
+  disabledMessage: {
+    backgroundColor: colors.warningLight,
     padding: 8,
-    backgroundColor: colors.background,
     borderRadius: 6,
+    marginBottom: 12,
   },
-  benchmarkTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  benchmarkStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  benchmarkStat: {
-    fontSize: 10,
-    color: colors.textSecondary,
+  disabledMessageText: {
+    fontSize: 11,
+    color: colors.warning,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   actionsContainer: {
     flexDirection: 'row',
@@ -327,20 +281,17 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: colors.border,
   },
   updateButton: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.background,
+    borderColor: colors.border,
   },
   actionText: {
     fontSize: 12,
     fontWeight: '600',
     color: colors.primary,
     marginLeft: 4,
-  },
-  updateText: {
-    color: 'white',
   },
 });
 
