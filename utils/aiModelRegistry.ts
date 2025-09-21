@@ -1,149 +1,71 @@
 
-// AI Model Registry - STUBBED VERSION
-// All AI functionality has been removed and replaced with stub implementations
+// AI Model Registry functionality has been completely removed from this application
+// This file exists only to prevent import errors and will be removed in future updates
 
 export interface AIModelInfo {
   id: string;
   name: string;
   description: string;
-  category: 'vision' | 'nlp' | 'audio' | 'multimodal' | 'generative';
+  category: string;
   license: string;
   source: string;
   url: string;
-  size: number; // MB
+  size: number;
   accuracy: number;
-  latency: number; // ms
+  latency: number;
   platforms: string[];
-  requirements: {
-    minRAM: number;
-    minStorage: number;
-    gpu: boolean;
-    networkRequired: boolean;
-  };
+  requirements: any;
   capabilities: string[];
   lastUpdated: string;
-  disabled: boolean; // New field to indicate stub status
+  disabled: boolean;
 }
 
-// Stub model registry - no actual AI models
-export const AI_MODEL_REGISTRY: AIModelInfo[] = [
-  {
-    id: 'stub-vision-model',
-    name: 'Vision Model (Disabled)',
-    description: 'Computer vision functionality has been disabled',
-    category: 'vision',
-    license: 'N/A',
-    source: 'Stub Implementation',
-    url: 'https://example.com/disabled',
-    size: 0,
-    accuracy: 0.5,
-    latency: 100,
-    platforms: ['ios', 'android', 'web'],
-    requirements: {
-      minRAM: 0,
-      minStorage: 0,
-      gpu: false,
-      networkRequired: false
-    },
-    capabilities: ['stub_response'],
-    lastUpdated: '2024-01-01',
-    disabled: true
-  },
-  {
-    id: 'stub-nlp-model',
-    name: 'NLP Model (Disabled)',
-    description: 'Natural language processing functionality has been disabled',
-    category: 'nlp',
-    license: 'N/A',
-    source: 'Stub Implementation',
-    url: 'https://example.com/disabled',
-    size: 0,
-    accuracy: 0.5,
-    latency: 100,
-    platforms: ['ios', 'android', 'web'],
-    requirements: {
-      minRAM: 0,
-      minStorage: 0,
-      gpu: false,
-      networkRequired: false
-    },
-    capabilities: ['stub_response'],
-    lastUpdated: '2024-01-01',
-    disabled: true
-  },
-  {
-    id: 'stub-audio-model',
-    name: 'Audio Model (Disabled)',
-    description: 'Audio processing functionality has been disabled',
-    category: 'audio',
-    license: 'N/A',
-    source: 'Stub Implementation',
-    url: 'https://example.com/disabled',
-    size: 0,
-    accuracy: 0.5,
-    latency: 100,
-    platforms: ['ios', 'android', 'web'],
-    requirements: {
-      minRAM: 0,
-      minStorage: 0,
-      gpu: false,
-      networkRequired: false
-    },
-    capabilities: ['stub_response'],
-    lastUpdated: '2024-01-01',
-    disabled: true
-  }
-];
+// Empty registry - no AI models available
+export const AI_MODEL_REGISTRY: AIModelInfo[] = [];
 
 export const getModelsByCategory = (category: string) => {
-  console.log(`Getting models by category (stubbed): ${category}`);
-  return AI_MODEL_REGISTRY.filter(model => model.category === category);
+  console.log(`AI models disabled - category: ${category}`);
+  return [];
 };
 
 export const getModelById = (id: string) => {
-  console.log(`Getting model by ID (stubbed): ${id}`);
-  return AI_MODEL_REGISTRY.find(model => model.id === id);
+  console.log(`AI models disabled - ID: ${id}`);
+  return null;
 };
 
 export const getCompatibleModels = (platform: string, maxSize?: number, requiresGPU?: boolean) => {
-  console.log(`Getting compatible models (stubbed) for platform: ${platform}`);
-  return AI_MODEL_REGISTRY.filter(model => {
-    return model.platforms.includes(platform) && model.disabled;
-  });
+  console.log(`AI models disabled - platform: ${platform}`);
+  return [];
 };
 
 export const getModelCapabilities = () => {
-  console.log('Getting model capabilities (stubbed)');
-  return ['stub_response', 'disabled_functionality'];
+  console.log('AI model capabilities disabled');
+  return [];
 };
 
 export const getModelLicenses = () => {
-  console.log('Getting model licenses (stubbed)');
-  return ['N/A'];
+  console.log('AI model licenses disabled');
+  return [];
 };
 
 export const searchModels = (query: string) => {
-  console.log(`Searching models (stubbed) for query: ${query}`);
-  return AI_MODEL_REGISTRY.filter(model => 
-    model.name.toLowerCase().includes('disabled') ||
-    model.description.toLowerCase().includes('disabled')
-  );
+  console.log(`AI model search disabled - query: ${query}`);
+  return [];
 };
 
-// Additional stub functions
 export const isAIEnabled = () => {
-  return false; // AI is always disabled
+  return false;
 };
 
 export const getDisabledReason = () => {
-  return 'AI functionality has been disabled to improve app performance, reduce bundle size, and enhance user privacy.';
+  return 'AI functionality has been completely removed to focus on core messaging, calling, and drum kit features.';
 };
 
 export const getAlternatives = () => {
   return [
     'Use the camera for standard photo and video capture',
-    'Manual text input instead of AI text generation',
-    'Standard image gallery instead of AI-powered search',
-    'Basic user preferences instead of AI recommendations'
+    'Use messaging for text communication',
+    'Use video calling for face-to-face conversations',
+    'Use the drum kit for music creation'
   ];
 };
