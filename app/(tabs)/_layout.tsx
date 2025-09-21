@@ -34,29 +34,20 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="calls"
+        options={{
+          title: 'Calls',
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="videocam" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="camera"
         options={{
           title: 'Camera',
           tabBarIcon: ({ color, size }) => (
             <Icon name="camera" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="drumkit"
-        options={{
-          title: 'Drum Kit',
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="musical-notes" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="ai"
-        options={{
-          title: 'AI Demo',
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="alert-triangle" size={size} color={colors.warning} />
           ),
         }}
       />

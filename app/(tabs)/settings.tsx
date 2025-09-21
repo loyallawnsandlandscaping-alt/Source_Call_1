@@ -26,10 +26,9 @@ export default function SettingsScreen() {
     vibration: true,
     readReceipts: true,
     lastSeen: true,
-    faceDetection: true,
-    handDetection: true,
-    gestureControl: true,
-    autoAnnotation: false,
+    autoAnswer: false,
+    callRecording: false,
+    hdVideo: true,
     biometricAuth: true,
     analyticsTracking: true,
     locationTracking: false,
@@ -95,7 +94,7 @@ export default function SettingsScreen() {
   const getSettingCategory = (key: string): string => {
     if (['notifications', 'sound', 'vibration'].includes(key)) return 'notifications';
     if (['readReceipts', 'lastSeen'].includes(key)) return 'privacy';
-    if (['faceDetection', 'handDetection', 'gestureControl', 'autoAnnotation'].includes(key)) return 'ai';
+    if (['autoAnswer', 'callRecording', 'hdVideo'].includes(key)) return 'calls';
     if (['biometricAuth'].includes(key)) return 'security';
     if (['analyticsTracking', 'locationTracking', 'crashReporting', 'performanceMonitoring'].includes(key)) return 'analytics';
     return 'general';
@@ -318,44 +317,36 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {/* AI Features */}
+        {/* Calls */}
         <View style={{ backgroundColor: colors.card, marginTop: 20 }}>
           <View style={{ paddingHorizontal: 20, paddingVertical: 12 }}>
             <Text style={[commonStyles.text, { fontWeight: '600' }]}>
-              AI Features
+              Calls
             </Text>
           </View>
           
           <SettingRow
-            title="Face Detection"
-            subtitle="Enable face detection in camera"
-            value={settings.faceDetection}
-            onToggle={() => toggleSetting('faceDetection')}
-            icon="happy"
+            title="Auto Answer"
+            subtitle="Automatically answer incoming calls"
+            value={settings.autoAnswer}
+            onToggle={() => toggleSetting('autoAnswer')}
+            icon="call"
           />
           
           <SettingRow
-            title="Hand Detection"
-            subtitle="Enable hand tracking for gestures"
-            value={settings.handDetection}
-            onToggle={() => toggleSetting('handDetection')}
-            icon="hand-left"
+            title="Call Recording"
+            subtitle="Enable call recording (where legal)"
+            value={settings.callRecording}
+            onToggle={() => toggleSetting('callRecording')}
+            icon="mic"
           />
           
           <SettingRow
-            title="Gesture Control"
-            subtitle="Control app with hand gestures"
-            value={settings.gestureControl}
-            onToggle={() => toggleSetting('gestureControl')}
-            icon="finger-print"
-          />
-          
-          <SettingRow
-            title="Auto Annotation"
-            subtitle="Automatically create annotations from AI detections"
-            value={settings.autoAnnotation}
-            onToggle={() => toggleSetting('autoAnnotation')}
-            icon="create"
+            title="HD Video"
+            subtitle="Use high definition video for calls"
+            value={settings.hdVideo}
+            onToggle={() => toggleSetting('hdVideo')}
+            icon="videocam"
           />
         </View>
 
@@ -531,7 +522,7 @@ export default function SettingsScreen() {
           </Text>
           
           <Text style={[commonStyles.text, { marginBottom: 16 }]}>
-            A secure, real-time messaging app with advanced AI-powered annotation capabilities and video calling features.
+            A clean, fast messaging and video calling app focused on privacy and performance.
           </Text>
 
           <View style={{ marginBottom: 16 }}>
@@ -540,37 +531,19 @@ export default function SettingsScreen() {
             </Text>
             <Text style={commonStyles.textSecondary}>
               • Real-time messaging with reactions{'\n'}
-              • AI-powered face and hand detection{'\n'}
-              • Touchless gesture control{'\n'}
-              • Advanced annotation system{'\n'}
-              • Video calling capabilities{'\n'}
+              • HD video and audio calling{'\n'}
+              • Group video calls (up to 8 people){'\n'}
+              • Media sharing (photos, videos){'\n'}
               • Secure end-to-end encryption{'\n'}
               • Cloud sync with Supabase{'\n'}
-              • Extensive user analytics{'\n'}
-              • Biometric authentication
-            </Text>
-          </View>
-
-          <View style={{ marginBottom: 16 }}>
-            <Text style={[commonStyles.text, { fontWeight: '600', marginBottom: 8 }]}>
-              AI Models (30+):
-            </Text>
-            <Text style={commonStyles.textSecondary}>
-              • Face Detection & Emotion Analysis{'\n'}
-              • Hand Landmark Detection{'\n'}
-              • Gesture Recognition{'\n'}
-              • Object Detection & Classification{'\n'}
-              • Real-time Frame Analysis{'\n'}
-              • Text Analysis & Translation{'\n'}
-              • Image & Video Processing{'\n'}
-              • Medical Imaging Analysis{'\n'}
-              • Financial Data Analysis
+              • Biometric authentication{'\n'}
+              • Cross-platform support
             </Text>
           </View>
 
           <Text style={[commonStyles.textSecondary, { fontSize: 12, textAlign: 'center' }]}>
             Version 1.0.0 • Built with React Native & Expo{'\n'}
-            Powered by Supabase & TensorFlow
+            Powered by Supabase
           </Text>
         </View>
       </SimpleBottomSheet>
@@ -592,13 +565,13 @@ export default function SettingsScreen() {
             </Text>
 
             <Text style={[commonStyles.text, { marginBottom: 16 }]}>
-              <Text style={{ fontWeight: '600' }}>AI Processing:{'\n'}</Text>
-              AI features process data locally on your device when possible. Some features may require cloud processing for optimal performance.
+              <Text style={{ fontWeight: '600' }}>Media Processing:{'\n'}</Text>
+              Photos and videos are processed locally on your device for privacy. Cloud storage is used only for backup and sync.
             </Text>
 
             <Text style={[commonStyles.text, { marginBottom: 16 }]}>
               <Text style={{ fontWeight: '600' }}>Location Data:{'\n'}</Text>
-              Location tracking is optional and can be disabled in settings. When enabled, location data helps improve AI features and analytics.
+              Location tracking is optional and can be disabled in settings. When enabled, location data helps improve call quality and analytics.
             </Text>
 
             <Text style={[commonStyles.text, { marginBottom: 16 }]}>

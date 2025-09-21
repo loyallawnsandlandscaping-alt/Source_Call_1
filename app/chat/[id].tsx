@@ -148,9 +148,29 @@ export default function ChatScreen() {
           )}
         </View>
 
-        <TouchableOpacity onPress={() => router.push(`/video-call/${id}`)}>
-          <Icon name="videocam" size={24} color={colors.primary} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <TouchableOpacity
+            onPress={() => {
+              Alert.alert('Video Call', 'Start video call with ' + displayInfo.name + '?', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Call', onPress: () => router.push('/call/room') }
+              ]);
+            }}
+          >
+            <Icon name="videocam" size={24} color={colors.primary} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            onPress={() => {
+              Alert.alert('Audio Call', 'Start audio call with ' + displayInfo.name + '?', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Call', onPress: () => router.push('/call/room') }
+              ]);
+            }}
+          >
+            <Icon name="call" size={24} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <KeyboardAvoidingView
