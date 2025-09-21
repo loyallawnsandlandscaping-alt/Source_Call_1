@@ -72,6 +72,9 @@
       "eas": {
         "projectId": "your-project-id"
       }
+    },
+    "experiments": {
+      "typedRoutes": false
     }
   }
 }

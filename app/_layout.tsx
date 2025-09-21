@@ -1,6 +1,5 @@
 
 import { useEffect } from 'react';
-import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -13,10 +12,6 @@ import { securityManager } from '../utils/security';
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
   useEffect(() => {
     const initializeApp = async () => {
       try {
@@ -40,17 +35,20 @@ export default function RootLayout() {
         });
 
         console.log('App initialization complete');
+        
+        // Hide splash screen after initialization
+        await SplashScreen.hideAsync();
       } catch (error) {
         console.error('App initialization error:', error);
         analyticsManager.trackError(error as Error, 'app_initialization');
+        
+        // Hide splash screen even if there's an error
+        await SplashScreen.hideAsync();
       }
     };
 
-    if (loaded) {
-      initializeApp();
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
+    initializeApp();
+  }, []);
 
   useEffect(() => {
     // Handle app state changes for analytics
@@ -72,9 +70,7 @@ export default function RootLayout() {
     };
   }, []);
 
-  if (!loaded) {
-    return null;
-  }
+
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

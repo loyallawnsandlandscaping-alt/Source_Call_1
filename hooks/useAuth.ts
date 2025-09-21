@@ -28,6 +28,9 @@ export const useAuth = () => {
       
       // Check for stored session
       const storedSession = await securityManager.getSecurely('user_session');
+      console.log('Stored session found:', !!storedSession);
+      console.log('Session valid:', storedSession ? securityManager.isSessionValid() : false);
+      console.log('Supabase configured:', isSupabaseConfigured());
       
       if (storedSession && securityManager.isSessionValid()) {
         const sessionData = JSON.parse(storedSession);
@@ -36,6 +39,7 @@ export const useAuth = () => {
           // Check Supabase session
           const { data: { session } } = await supabase.auth.getSession();
           if (session) {
+            console.log('Valid Supabase session found');
             setAuthState({
               isAuthenticated: true,
               isLoading: false,
@@ -60,6 +64,7 @@ export const useAuth = () => {
           }
         } else {
           // Use mock user for local development
+          console.log('Using mock user for local development');
           setAuthState({
             isAuthenticated: true,
             isLoading: false,
@@ -77,13 +82,12 @@ export const useAuth = () => {
       }
 
       // No valid session found
+      console.log('No valid session found, user needs to sign in');
       setAuthState({
         isAuthenticated: false,
         isLoading: false,
         user: null,
       });
-      
-      console.log('No valid session found');
     } catch (error) {
       console.error('Auth initialization error:', error);
       analyticsManager.trackError(error as Error, 'auth_initialization');

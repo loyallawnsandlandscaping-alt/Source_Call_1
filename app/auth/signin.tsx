@@ -17,10 +17,12 @@ import { useAuth } from '../../hooks/useAuth';
 import Icon from '../../components/Icon';
 
 export default function SignInScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('demo@sourcecall.com');
+  const [password, setPassword] = useState('demo123');
   const [showPassword, setShowPassword] = useState(false);
-  const { signIn, isLoading, authenticateWithBiometrics } = useAuth();
+  const { signIn, isLoading, signInWithBiometrics } = useAuth();
+
+  console.log('SignInScreen rendered');
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -37,7 +39,7 @@ export default function SignInScreen() {
   };
 
   const handleBiometricAuth = async () => {
-    const result = await authenticateWithBiometrics();
+    const result = await signInWithBiometrics();
     if (result.success) {
       router.replace('/');
     } else {
@@ -118,6 +120,24 @@ export default function SignInScreen() {
                   </Text>
                 </View>
               </TouchableOpacity>
+
+              {/* Demo Info */}
+              <View style={{
+                backgroundColor: colors.cardBackground,
+                padding: 16,
+                borderRadius: 12,
+                marginTop: 20,
+                borderWidth: 1,
+                borderColor: colors.border,
+              }}>
+                <Text style={[commonStyles.text, { fontWeight: '600', marginBottom: 8 }]}>
+                  Demo Login
+                </Text>
+                <Text style={[commonStyles.textSecondary, { fontSize: 14 }]}>
+                  Email: demo@sourcecall.com{'\n'}
+                  Password: demo123
+                </Text>
+              </View>
 
               <View style={[commonStyles.centerRow, { marginTop: 30 }]}>
                 <Text style={commonStyles.textSecondary}>Don&apos;t have an account? </Text>
