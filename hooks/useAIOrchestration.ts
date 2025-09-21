@@ -1,32 +1,9 @@
 
-// This hook has been completely removed
-// AI functionality is no longer available in this application
+// This file should not exist - AI functionality has been completely removed
+// This is a placeholder to prevent import errors during cleanup
+
+console.log('WARNING: useAIOrchestration.ts should not exist - AI functionality removed');
 
 export const useAIOrchestration = () => {
-  console.log('AI orchestration functionality has been removed');
-  
-  return {
-    availableModels: [],
-    activeModels: {},
-    orchestrationConfig: null,
-    benchmarks: [],
-    updateInfo: [],
-    isLoading: false,
-    error: 'AI orchestration has been removed',
-    modelCache: {},
-    performanceMetrics: {},
-    
-    routeRequest: () => null,
-    benchmarkModel: async () => null,
-    updateModel: async () => false,
-    getModelPerformance: () => null,
-    optimizeOrchestration: async () => {},
-    saveOrchestrationConfig: async () => {},
-    loadOrchestrationConfig: async () => null,
-    getSystemStats: () => ({}),
-    clearCache: async () => {},
-    exportConfiguration: async () => '',
-    initializeActiveModels: async () => {},
-    updateModelUsage: () => {}
-  };
+  throw new Error('AI orchestration functionality has been completely removed from this application');
 };

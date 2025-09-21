@@ -1,6 +1,8 @@
 
-// AI Model Registry functionality has been completely removed from this application
-// This file exists only to prevent import errors and will be removed in future updates
+// This file should not exist - AI functionality has been completely removed
+// This is a placeholder to prevent import errors during cleanup
+
+console.log('WARNING: aiModelRegistry.ts should not exist - AI functionality removed');
 
 export interface AIModelInfo {
   id: string;
@@ -20,37 +22,30 @@ export interface AIModelInfo {
   disabled: boolean;
 }
 
-// Empty registry - no AI models available
 export const AI_MODEL_REGISTRY: AIModelInfo[] = [];
 
 export const getModelsByCategory = (category: string) => {
-  console.log(`AI models disabled - category: ${category}`);
-  return [];
+  throw new Error('AI functionality has been completely removed from this application');
 };
 
 export const getModelById = (id: string) => {
-  console.log(`AI models disabled - ID: ${id}`);
-  return null;
+  throw new Error('AI functionality has been completely removed from this application');
 };
 
 export const getCompatibleModels = (platform: string, maxSize?: number, requiresGPU?: boolean) => {
-  console.log(`AI models disabled - platform: ${platform}`);
-  return [];
+  throw new Error('AI functionality has been completely removed from this application');
 };
 
 export const getModelCapabilities = () => {
-  console.log('AI model capabilities disabled');
-  return [];
+  throw new Error('AI functionality has been completely removed from this application');
 };
 
 export const getModelLicenses = () => {
-  console.log('AI model licenses disabled');
-  return [];
+  throw new Error('AI functionality has been completely removed from this application');
 };
 
 export const searchModels = (query: string) => {
-  console.log(`AI model search disabled - query: ${query}`);
-  return [];
+  throw new Error('AI functionality has been completely removed from this application');
 };
 
 export const isAIEnabled = () => {
