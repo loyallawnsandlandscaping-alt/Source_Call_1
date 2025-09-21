@@ -52,6 +52,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="drumkit"
+        options={{
+          title: 'Drum Kit',
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="musical-notes" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
